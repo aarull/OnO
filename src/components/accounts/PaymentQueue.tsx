@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { api } from '../../lib/api'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
@@ -162,13 +162,11 @@ export function PaymentQueue() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          to={`/dashboard/accounts/invoice/${inv.id}`}
-                          className="text-xs font-medium text-accent-2 underline-offset-2 hover:underline"
-                        >
-                          View
-                        </Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <InvoicePdfActions
+                          invoice={inv}
+                          detailPath={`/dashboard/accounts/invoice/${inv.id}`}
+                        />
                         <button
                           type="button"
                           onClick={() => handleProcess(inv)}

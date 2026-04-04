@@ -1,6 +1,7 @@
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo, initials, avatarColor, cn } from '../../lib/utils'
 import { Button } from '../shared/Button'
+import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 
 interface InvoiceCardProps {
   invoice: Invoice
@@ -37,12 +38,21 @@ export function InvoiceCard({ invoice, onApprove, onReject }: InvoiceCardProps) 
       <p className="mb-3 text-sm text-text-2">{invoice.campaign}</p>
 
       {/* Amount */}
-      <p className="mb-5 text-lg font-semibold text-text">
+      <p className="mb-4 text-lg font-semibold text-text">
         {fmtAmount(invoice.amount)}
         {invoice.gst && (
           <span className="ml-2 text-xs font-normal text-text-3">+18% GST</span>
         )}
       </p>
+
+      <div className="mb-4 border-t border-border pt-3">
+        <InvoicePdfActions
+          invoice={invoice}
+          detailPath={`/dashboard/im/invoice/${invoice.id}`}
+          className="gap-x-3"
+          linkClassName="text-[11px] font-medium text-text-2 underline-offset-2 transition-colors hover:text-accent-2 hover:underline"
+        />
+      </div>
 
       {/* Actions */}
       <div className="flex gap-2">

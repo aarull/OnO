@@ -8,6 +8,7 @@ import { MetricsGrid } from '../shared/MetricsGrid'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceTable } from '../shared/InvoiceTable'
 import { StatusBadge } from '../shared/StatusBadge'
+import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 
 export function InvoiceList() {
   const navigate = useNavigate()
@@ -63,15 +64,7 @@ export function InvoiceList() {
       key: 'action',
       label: 'Action',
       render: (row: Invoice) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            navigate(`/dashboard/creator/${row.id}`)
-          }}
-          className="text-xs font-medium text-accent-2 transition-colors hover:text-accent"
-        >
-          View
-        </button>
+        <InvoicePdfActions invoice={row} detailPath={`/dashboard/creator/${row.id}`} />
       ),
     },
   ]

@@ -24,6 +24,8 @@ export interface Invoice {
   account_no: string
   ifsc: string
   assigned_im: string
+  /** Present when creator uploaded a PDF; fetch with auth to open/download */
+  invoice_file_url?: string
   status: InvoiceStatus
   rejection_note: string
   created_at: string

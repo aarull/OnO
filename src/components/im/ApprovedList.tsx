@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
+import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 
 export function ApprovedList() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -69,6 +70,9 @@ export function ApprovedList() {
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-3">
                   Updated
                 </th>
+                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-3">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -84,6 +88,13 @@ export function ApprovedList() {
                     <StatusBadge status={inv.status} />
                   </td>
                   <td className="px-5 py-4 text-xs text-text-3">{timeAgo(inv.updated_at)}</td>
+                  <td className="px-5 py-4">
+                    <InvoicePdfActions
+                      invoice={inv}
+                      detailPath={`/dashboard/im/invoice/${inv.id}`}
+                      detailState={{ fromApproved: true }}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

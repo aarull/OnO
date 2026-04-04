@@ -6,6 +6,7 @@ import { fmtAmount, timeAgo, cn } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceTable } from '../shared/InvoiceTable'
+import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { WorkloadBar } from '../shared/WorkloadBar'
 
 const ACTION_DOT_COLORS: Record<string, string> = {
@@ -85,6 +86,16 @@ export function AgencyView() {
     { key: 'updated_at', label: 'Updated', render: (row: Invoice) => (
       <span className="text-text-2">{timeAgo(row.updated_at)}</span>
     )},
+    {
+      key: 'action',
+      label: 'Action',
+      render: (row: Invoice) => (
+        <InvoicePdfActions
+          invoice={row}
+          detailPath={`/dashboard/accounts/invoice/${row.id}`}
+        />
+      ),
+    },
   ]
 
   return (

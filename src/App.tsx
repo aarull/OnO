@@ -39,6 +39,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute role="im" />}>
           <Route path="/dashboard/im" element={<IMDashboard />} />
+          <Route path="/dashboard/im/invoice/:id" element={<IMDashboard />} />
           <Route path="/dashboard/im/approved" element={<IMDashboard />} />
         </Route>
 
