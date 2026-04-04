@@ -7,9 +7,10 @@ interface InvoiceCardProps {
   invoice: Invoice
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onViewTimeline: (invoice: Invoice) => void
 }
 
-export function InvoiceCard({ invoice, onApprove, onReject }: InvoiceCardProps) {
+export function InvoiceCard({ invoice, onApprove, onReject, onViewTimeline }: InvoiceCardProps) {
   const avatar = avatarColor(invoice.creator_name)
 
   return (
@@ -48,7 +49,7 @@ export function InvoiceCard({ invoice, onApprove, onReject }: InvoiceCardProps) 
       <div className="mb-4 border-t border-border pt-3">
         <InvoicePdfActions
           invoice={invoice}
-          detailPath={`/dashboard/im/invoice/${invoice.id}`}
+          onViewTimeline={onViewTimeline}
           className="gap-x-3"
           linkClassName="text-[11px] font-medium text-text-2 underline-offset-2 transition-colors hover:text-accent-2 hover:underline"
         />

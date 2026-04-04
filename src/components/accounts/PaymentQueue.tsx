@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
+import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 import { api } from '../../lib/api'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
@@ -28,6 +29,7 @@ export function PaymentQueue() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [timelineInvoice, setTimelineInvoice] = useState<Invoice | null>(null)
 
   async function fetchInvoices() {
     try {
@@ -80,6 +82,13 @@ export function PaymentQueue() {
 
   return (
     <div>
+      <InvoiceDetailPanel
+        invoiceId={timelineInvoice?.id ?? null}
+        open={!!timelineInvoice}
+        onClose={() => setTimelineInvoice(null)}
+        backLabel="Back to payment queue"
+      />
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-serif text-2xl text-text">Payment Queue</h1>
@@ -165,7 +174,7 @@ export function PaymentQueue() {
                       <div className="flex flex-wrap items-center gap-3">
                         <InvoicePdfActions
                           invoice={inv}
-                          detailPath={`/dashboard/accounts/invoice/${inv.id}`}
+                          onViewTimeline={setTimelineInvoice}
                         />
                         <button
                           type="button"

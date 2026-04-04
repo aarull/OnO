@@ -5,10 +5,12 @@ import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
+import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
 export function ApprovedList() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -29,6 +31,13 @@ export function ApprovedList() {
 
   return (
     <div className="animate-fade-up">
+      <InvoiceDetailPanel
+        invoiceId={timelineInvoiceId}
+        open={!!timelineInvoiceId}
+        onClose={() => setTimelineInvoiceId(null)}
+        backLabel="Back to approved"
+      />
+
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="font-serif text-2xl text-text">Approved Invoices</h1>
@@ -91,8 +100,7 @@ export function ApprovedList() {
                   <td className="px-5 py-4">
                     <InvoicePdfActions
                       invoice={inv}
-                      detailPath={`/dashboard/im/invoice/${inv.id}`}
-                      detailState={{ fromApproved: true }}
+                      onViewTimeline={() => setTimelineInvoiceId(inv.id)}
                     />
                   </td>
                 </tr>

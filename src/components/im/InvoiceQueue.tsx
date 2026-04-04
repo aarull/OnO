@@ -6,11 +6,13 @@ import { fmtAmount } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
+import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
 export function InvoiceQueue() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [rejectTarget, setRejectTarget] = useState<Invoice | null>(null)
+  const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
   const markedRef = useRef<Set<string>>(new Set())
 
   const fetchInvoices = useCallback(async () => {
@@ -100,6 +102,13 @@ export function InvoiceQueue() {
 
   return (
     <div className="animate-fade-up">
+      <InvoiceDetailPanel
+        invoiceId={timelineInvoiceId}
+        open={!!timelineInvoiceId}
+        onClose={() => setTimelineInvoiceId(null)}
+        backLabel="Back to queue"
+      />
+
       {/* Page Header */}
       <div className="mb-8">
         <h1 className="font-serif text-2xl text-text">Invoice Queue</h1>
@@ -131,6 +140,7 @@ export function InvoiceQueue() {
               invoice={inv}
               onApprove={handleApprove}
               onReject={handleRejectClick}
+              onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
             />
           ))}
         </div>

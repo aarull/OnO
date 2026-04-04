@@ -7,6 +7,7 @@ import { MetricCard } from '../shared/MetricCard'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceTable } from '../shared/InvoiceTable'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
+import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 import { WorkloadBar } from '../shared/WorkloadBar'
 
 const ACTION_DOT_COLORS: Record<string, string> = {
@@ -22,6 +23,7 @@ export function AgencyView() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -92,7 +94,7 @@ export function AgencyView() {
       render: (row: Invoice) => (
         <InvoicePdfActions
           invoice={row}
-          detailPath={`/dashboard/accounts/invoice/${row.id}`}
+          onViewTimeline={() => setTimelineInvoiceId(row.id)}
         />
       ),
     },
@@ -100,6 +102,13 @@ export function AgencyView() {
 
   return (
     <div>
+      <InvoiceDetailPanel
+        invoiceId={timelineInvoiceId}
+        open={!!timelineInvoiceId}
+        onClose={() => setTimelineInvoiceId(null)}
+        backLabel="Back to agency view"
+      />
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-serif text-2xl text-text">Agency Dashboard</h1>

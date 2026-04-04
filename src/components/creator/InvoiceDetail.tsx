@@ -13,6 +13,8 @@ interface InvoiceDetailProps {
   backPath?: string
   backLabel?: string
   showReminderToggle?: boolean
+  /** When set (e.g. modal overlay), Back uses this instead of router navigation */
+  onClose?: () => void
 }
 
 export function InvoiceDetail({
@@ -20,8 +22,14 @@ export function InvoiceDetail({
   backPath = '/dashboard/creator',
   backLabel = 'Back to invoices',
   showReminderToggle = true,
+  onClose,
 }: InvoiceDetailProps) {
   const navigate = useNavigate()
+
+  function handleBack() {
+    if (onClose) onClose()
+    else navigate(backPath)
+  }
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,7 +66,7 @@ export function InvoiceDetail({
         <span className="text-4xl">404</span>
         <p className="mt-3 text-sm text-text-3">Invoice not found</p>
         <button
-          onClick={() => navigate(backPath)}
+          onClick={handleBack}
           className="mt-4 text-sm text-accent-2 hover:underline"
         >
           {backLabel}
@@ -74,7 +82,8 @@ export function InvoiceDetail({
     <>
       {/* Back button */}
       <button
-        onClick={() => navigate(backPath)}
+        type="button"
+        onClick={handleBack}
         className="mb-6 flex items-center gap-1 text-sm text-text-2 transition-colors hover:text-text"
       >
         <span>←</span> {backLabel}

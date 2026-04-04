@@ -9,11 +9,13 @@ import { MetricCard } from '../shared/MetricCard'
 import { InvoiceTable } from '../shared/InvoiceTable'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
+import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
 export function InvoiceList() {
   const navigate = useNavigate()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
 
   useEffect(() => {
     api
@@ -64,7 +66,7 @@ export function InvoiceList() {
       key: 'action',
       label: 'Action',
       render: (row: Invoice) => (
-        <InvoicePdfActions invoice={row} detailPath={`/dashboard/creator/${row.id}`} />
+        <InvoicePdfActions invoice={row} onViewTimeline={setSelectedInvoice} />
       ),
     },
   ]
@@ -79,6 +81,14 @@ export function InvoiceList() {
 
   return (
     <>
+      <InvoiceDetailPanel
+        invoiceId={selectedInvoice?.id ?? null}
+        open={!!selectedInvoice}
+        onClose={() => setSelectedInvoice(null)}
+        backLabel="Back to invoices"
+        showReminderToggle
+      />
+
       <PageHeader
         title="My Invoices"
         subtitle="Track all your submitted invoices and payment status"
@@ -99,7 +109,7 @@ export function InvoiceList() {
         <InvoiceTable
           columns={columns}
           data={invoices}
-          onRowClick={(row) => navigate(`/dashboard/creator/${row.id}`)}
+          onRowClick={(row) => setSelectedInvoice(row)}
         />
       </div>
     </>
