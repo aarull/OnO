@@ -30,7 +30,7 @@ export function Sidebar({ items }: SidebarProps) {
         <div className="flex h-9 w-9 items-center justify-center rounded-r bg-gradient-to-br from-accent to-accent-2 text-sm font-bold text-white">
           IF
         </div>
-        <span className="text-base font-semibold text-text">InvoFlow</span>
+        <span className="text-base font-semibold text-text">OnO Creators</span>
       </div>
 
       {/* Nav */}
