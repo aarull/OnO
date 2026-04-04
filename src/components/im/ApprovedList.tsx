@@ -100,7 +100,7 @@ export function ApprovedList() {
                   <td className="px-5 py-4">
                     <InvoicePdfActions
                       invoice={inv}
-                      onViewTimeline={() => setTimelineInvoiceId(inv.id)}
+                      onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
                     />
                   </td>
                 </tr>

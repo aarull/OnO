@@ -68,6 +68,39 @@ export async function fetchAuthenticatedBlob(pathOrUrl: string): Promise<Blob> {
   return res.blob()
 }
 
+/**
+ * Resolve a browser-openable URL for an uploaded invoice PDF.
+ * 1) GET /invoices/:id/file-url → { signed_url | signedUrl | url }
+ * 2) Else use invoice_file_url if absolute, or resolve relative to API origin.
+ */
+export async function getInvoiceFileSignedUrl(
+  invoiceId: string,
+  invoiceFileRef?: string | null
+): Promise<string> {
+  try {
+    const data = (await apiFetch(`/invoices/${encodeURIComponent(invoiceId)}/file-url`)) as {
+      signed_url?: string
+      signedUrl?: string
+      url?: string
+    }
+    const u = data?.signed_url ?? data?.signedUrl ?? data?.url
+    if (typeof u === 'string' && u.trim().length > 0) {
+      return u.trim()
+    }
+  } catch (err) {
+    console.warn('[getInvoiceFileSignedUrl] /file-url request failed:', err)
+  }
+
+  const ref = invoiceFileRef?.trim()
+  if (!ref) {
+    throw new Error('No invoice file reference')
+  }
+  if (/^https?:\/\//i.test(ref)) {
+    return ref
+  }
+  return resolveMediaUrl(ref)
+}
+
 export const api = {
   get: (path: string) => apiFetch(path),
   post: (path: string, body: unknown) =>

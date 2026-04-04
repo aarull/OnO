@@ -94,7 +94,7 @@ export function AgencyView() {
       render: (row: Invoice) => (
         <InvoicePdfActions
           invoice={row}
-          onViewTimeline={() => setTimelineInvoiceId(row.id)}
+          onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
         />
       ),
     },
