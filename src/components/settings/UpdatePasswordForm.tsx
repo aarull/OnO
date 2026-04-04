@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '../../lib/supabaseClient'
 import { FormInput } from '../shared/FormInput'
 
 export function UpdatePasswordForm() {
@@ -27,6 +27,12 @@ export function UpdatePasswordForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
+
+    const supabase = getSupabase()
+    if (!supabase) {
+      toast.error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.')
+      return
+    }
 
     setSubmitting(true)
     try {
