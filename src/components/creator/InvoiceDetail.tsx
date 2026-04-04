@@ -120,6 +120,26 @@ export function InvoiceDetail({
             Invoice Details
           </p>
           <dl className="space-y-3">
+            {(invoice.pan || invoice.gst_number) && (
+              <>
+                {invoice.pan ? (
+                  <div className="flex justify-between">
+                    <dt className="text-sm text-text-2">PAN</dt>
+                    <dd className="text-sm font-medium text-text font-mono">
+                      {invoice.pan}
+                    </dd>
+                  </div>
+                ) : null}
+                {invoice.gst_number ? (
+                  <div className="flex justify-between">
+                    <dt className="text-sm text-text-2">GST Number</dt>
+                    <dd className="text-sm font-medium text-text font-mono">
+                      {invoice.gst_number}
+                    </dd>
+                  </div>
+                ) : null}
+              </>
+            )}
             <div className="flex justify-between">
               <dt className="text-sm text-text-2">Base Amount</dt>
               <dd className="text-sm font-medium text-text">
@@ -161,6 +181,14 @@ export function InvoiceDetail({
             Bank Details
           </p>
           <dl className="space-y-3">
+            {invoice.account_holder_name ? (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">Account Holder</dt>
+                <dd className="text-sm font-medium text-text">
+                  {invoice.account_holder_name}
+                </dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt className="text-sm text-text-2">Account No</dt>
               <dd className="text-sm font-medium text-text font-mono">

@@ -56,6 +56,9 @@ export async function createInvoice(data: {
   campaign: string
   amount: number
   gst: boolean
+  account_holder_name: string
+  pan: string
+  gst_number: string
   account_no: string
   ifsc: string
   assigned_im: string

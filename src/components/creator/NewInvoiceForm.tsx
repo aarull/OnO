@@ -21,16 +21,30 @@ export function NewInvoiceForm() {
   const [campaign, setCampaign] = useState('')
   const [amount, setAmount] = useState('')
   const [gst, setGst] = useState('yes')
+  const [pan, setPan] = useState('')
+  const [gstNumber, setGstNumber] = useState('')
+  const [accountHolderName, setAccountHolderName] = useState('')
   const [accountNo, setAccountNo] = useState('')
   const [ifsc, setIfsc] = useState('')
   const [assignedIm, setAssignedIm] = useState('')
   const [docMode, setDocMode] = useState('auto')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  function clearPanGstError() {
+    setErrors((prev) => {
+      if (!prev.panOrGst) return prev
+      const { panOrGst: _, ...rest } = prev
+      return rest
+    })
+  }
+
   function validate(): boolean {
     const next: Record<string, string> = {}
     if (!campaign.trim()) next.campaign = 'Campaign name is required'
     if (!amount || Number(amount) <= 0) next.amount = 'Enter a valid amount'
+    if (!pan.trim() && !gstNumber.trim()) {
+      next.panOrGst = 'Please provide either a PAN or GST Number'
+    }
     if (!accountNo.trim()) next.accountNo = 'Account number is required'
     if (!ifsc.trim()) next.ifsc = 'IFSC code is required'
     if (!assignedIm) next.assignedIm = 'Please select an IM member'
@@ -48,6 +62,9 @@ export function NewInvoiceForm() {
         campaign: campaign.trim(),
         amount: Number(amount),
         gst: gst === 'yes',
+        pan: pan.trim(),
+        gst_number: gstNumber.trim(),
+        account_holder_name: accountHolderName.trim(),
         account_no: accountNo.trim(),
         ifsc: ifsc.trim(),
         assigned_im: assignedIm,
@@ -108,6 +125,43 @@ export function NewInvoiceForm() {
           </div>
           <p className="text-[11px] text-text-3">GST applicable?</p>
         </div>
+
+        <div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormInput
+              label="PAN Number"
+              placeholder="e.g. ABCDE1234F"
+              value={pan}
+              onChange={(e) => {
+                setPan(e.target.value.toUpperCase())
+                clearPanGstError()
+              }}
+              maxLength={10}
+              className="uppercase"
+            />
+            <FormInput
+              label="GST Number"
+              placeholder="e.g. 22AAAAA0000A1Z5"
+              value={gstNumber}
+              onChange={(e) => {
+                setGstNumber(e.target.value.toUpperCase())
+                clearPanGstError()
+              }}
+              maxLength={15}
+              className="uppercase"
+            />
+          </div>
+          {errors.panOrGst && (
+            <p className="mt-1.5 text-xs text-red">{errors.panOrGst}</p>
+          )}
+        </div>
+
+        <FormInput
+          label="Account Holder Name"
+          placeholder="Name as per bank records"
+          value={accountHolderName}
+          onChange={(e) => setAccountHolderName(e.target.value)}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <FormInput
