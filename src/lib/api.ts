@@ -29,10 +29,27 @@ async function apiFetch(path: string, options: RequestInit = {}) {
   return res.json()
 }
 
+async function apiPostForm(path: string, formData: FormData) {
+  const token = getToken()
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: formData,
+  })
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: 'Request failed' }))
+    throw new Error(error.error || error.message || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+
 export const api = {
   get: (path: string) => apiFetch(path),
   post: (path: string, body: unknown) =>
     apiFetch(path, { method: 'POST', body: JSON.stringify(body) }),
+  postForm: (path: string, formData: FormData) => apiPostForm(path, formData),
   patch: (path: string, body: unknown) =>
     apiFetch(path, { method: 'PATCH', body: JSON.stringify(body) }),
 }

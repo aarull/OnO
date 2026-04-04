@@ -13,6 +13,7 @@ export function ToggleGroup({ options, value, onChange }: ToggleGroupProps) {
         const active = opt.value === value
         return (
           <button
+            type="button"
             key={opt.value}
             onClick={() => onChange(opt.value)}
             className={cn(
