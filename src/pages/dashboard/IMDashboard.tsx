@@ -3,10 +3,12 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { InvoiceDetail } from '../../components/creator/InvoiceDetail'
 import { InvoiceQueue } from '../../components/im/InvoiceQueue'
 import { ApprovedList } from '../../components/im/ApprovedList'
+import Settings from './Settings'
 
 const sidebarItems = [
   { label: 'My Queue', icon: '📥', path: '/dashboard/im' },
   { label: 'Approved', icon: '✅', path: '/dashboard/im/approved' },
+  { label: 'Settings', icon: '⚙️', path: '/dashboard/im/settings' },
 ]
 
 export default function IMDashboard() {
@@ -17,6 +19,14 @@ export default function IMDashboard() {
     { path: '/dashboard/im/invoice/:id', end: true },
     location.pathname
   )
+
+  if (location.pathname === '/dashboard/im/settings') {
+    return (
+      <AppLayout sidebarItems={sidebarItems}>
+        <Settings />
+      </AppLayout>
+    )
+  }
 
   if (detailMatch && id) {
     const fromApproved = Boolean(

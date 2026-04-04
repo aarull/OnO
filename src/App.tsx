@@ -34,17 +34,20 @@ export default function App() {
         <Route element={<ProtectedRoute role="creator" />}>
           <Route path="/dashboard/creator" element={<CreatorDashboard />} />
           <Route path="/dashboard/creator/new" element={<CreatorDashboard />} />
+          <Route path="/dashboard/creator/settings" element={<CreatorDashboard />} />
           <Route path="/dashboard/creator/:id" element={<CreatorDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute role="im" />}>
           <Route path="/dashboard/im" element={<IMDashboard />} />
+          <Route path="/dashboard/im/settings" element={<IMDashboard />} />
           <Route path="/dashboard/im/invoice/:id" element={<IMDashboard />} />
           <Route path="/dashboard/im/approved" element={<IMDashboard />} />
         </Route>
 
         <Route element={<ProtectedRoute role="accounts" />}>
           <Route path="/dashboard/accounts" element={<AccountsDashboard />} />
+          <Route path="/dashboard/accounts/settings" element={<AccountsDashboard />} />
           <Route path="/dashboard/accounts/invoice/:id" element={<AccountsDashboard />} />
           <Route path="/dashboard/accounts/agency" element={<AccountsDashboard />} />
           <Route path="/dashboard/accounts/audit" element={<AccountsDashboard />} />

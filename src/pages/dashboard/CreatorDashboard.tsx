@@ -3,10 +3,12 @@ import { AppLayout } from '../../components/layout/AppLayout'
 import { InvoiceList } from '../../components/creator/InvoiceList'
 import { NewInvoiceForm } from '../../components/creator/NewInvoiceForm'
 import { InvoiceDetail } from '../../components/creator/InvoiceDetail'
+import Settings from './Settings'
 
 const sidebarItems = [
   { label: 'My Invoices', icon: '📄', path: '/dashboard/creator' },
   { label: 'New Invoice', icon: '➕', path: '/dashboard/creator/new' },
+  { label: 'Settings', icon: '⚙️', path: '/dashboard/creator/settings' },
 ]
 
 export default function CreatorDashboard() {
@@ -14,6 +16,9 @@ export default function CreatorDashboard() {
   const location = useLocation()
 
   function renderPage() {
+    if (location.pathname === '/dashboard/creator/settings') {
+      return <Settings />
+    }
     if (location.pathname === '/dashboard/creator/new') {
       return <NewInvoiceForm />
     }
