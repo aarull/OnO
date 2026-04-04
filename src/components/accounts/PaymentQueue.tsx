@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
 import type { Invoice } from '../../lib/types'
@@ -118,7 +119,6 @@ export function PaymentQueue() {
             <tbody>
               {pending.map((inv) => {
                 const gst = gstAmount(inv)
-                const masked = '•••• ' + inv.account_no.slice(-4)
                 const overdueFlag = isOverdue(inv.updated_at)
                 const holdFlag = isHold(totalWithGst(inv))
 
@@ -141,7 +141,8 @@ export function PaymentQueue() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-text-2 font-mono">
-                      {masked}
+                      <div className="max-w-[14rem] break-all">{inv.account_no}</div>
+                      <div className="mt-0.5 text-xs text-text-3">{inv.ifsc}</div>
                     </td>
                     <td className="px-4 py-3 text-sm text-text-2">
                       {timeAgo(inv.updated_at)}
@@ -161,12 +162,21 @@ export function PaymentQueue() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleProcess(inv)}
-                        className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
-                      >
-                        Process
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          to={`/dashboard/accounts/invoice/${inv.id}`}
+                          className="text-xs font-medium text-accent-2 underline-offset-2 hover:underline"
+                        >
+                          View
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => handleProcess(inv)}
+                          className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
+                        >
+                          Process
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

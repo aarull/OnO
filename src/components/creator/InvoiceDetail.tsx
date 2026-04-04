@@ -9,9 +9,18 @@ import { ReminderToggle } from './ReminderToggle'
 
 interface InvoiceDetailProps {
   invoiceId: string
+  /** Defaults to creator list */
+  backPath?: string
+  backLabel?: string
+  showReminderToggle?: boolean
 }
 
-export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
+export function InvoiceDetail({
+  invoiceId,
+  backPath = '/dashboard/creator',
+  backLabel = 'Back to invoices',
+  showReminderToggle = true,
+}: InvoiceDetailProps) {
   const navigate = useNavigate()
   const [invoice, setInvoice] = useState<Invoice | null>(null)
   const [audit, setAudit] = useState<AuditEntry[]>([])
@@ -49,10 +58,10 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
         <span className="text-4xl">404</span>
         <p className="mt-3 text-sm text-text-3">Invoice not found</p>
         <button
-          onClick={() => navigate('/dashboard/creator')}
+          onClick={() => navigate(backPath)}
           className="mt-4 text-sm text-accent-2 hover:underline"
         >
-          Back to invoices
+          {backLabel}
         </button>
       </div>
     )
@@ -60,19 +69,15 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
 
   const gstAmount = invoice.gst ? invoice.amount * 0.18 : 0
   const totalPayable = invoice.amount + gstAmount
-  const maskedAccount =
-    invoice.account_no.length > 4
-      ? '•••• ' + invoice.account_no.slice(-4)
-      : invoice.account_no
 
   return (
     <>
       {/* Back button */}
       <button
-        onClick={() => navigate('/dashboard/creator')}
+        onClick={() => navigate(backPath)}
         className="mb-6 flex items-center gap-1 text-sm text-text-2 transition-colors hover:text-text"
       >
-        <span>←</span> Back
+        <span>←</span> {backLabel}
       </button>
 
       {/* Header */}
@@ -86,7 +91,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
             {invoice.creator_name} &middot; {fmtDate(invoice.created_at)}
           </p>
         </div>
-        <ReminderToggle invoiceId={invoiceId} />
+        {showReminderToggle && <ReminderToggle invoiceId={invoiceId} />}
       </div>
 
       {/* Status Tracker */}
@@ -159,7 +164,7 @@ export function InvoiceDetail({ invoiceId }: InvoiceDetailProps) {
             <div className="flex justify-between">
               <dt className="text-sm text-text-2">Account No</dt>
               <dd className="text-sm font-medium text-text font-mono">
-                {maskedAccount}
+                {invoice.account_no}
               </dd>
             </div>
             <div className="flex justify-between">

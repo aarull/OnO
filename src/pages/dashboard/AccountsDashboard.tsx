@@ -1,8 +1,9 @@
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams, matchPath } from 'react-router-dom'
 import { AppLayout } from '../../components/layout/AppLayout'
 import { PaymentQueue } from '../../components/accounts/PaymentQueue'
 import { AgencyView } from '../../components/accounts/AgencyView'
 import { AuditLog } from '../../components/accounts/AuditLog'
+import { InvoiceDetail } from '../../components/creator/InvoiceDetail'
 
 const sidebarItems = [
   { label: 'Payment Queue', icon: '💳', path: '/dashboard/accounts' },
@@ -12,6 +13,27 @@ const sidebarItems = [
 
 export default function AccountsDashboard() {
   const location = useLocation()
+  const { id } = useParams()
+
+  const invoiceDetailMatch = matchPath(
+    { path: '/dashboard/accounts/invoice/:id', end: true },
+    location.pathname
+  )
+
+  if (invoiceDetailMatch && id) {
+    return (
+      <AppLayout sidebarItems={sidebarItems}>
+        <div className="animate-fade-up">
+          <InvoiceDetail
+            invoiceId={id}
+            backPath="/dashboard/accounts"
+            backLabel="Back to payment queue"
+            showReminderToggle={false}
+          />
+        </div>
+      </AppLayout>
+    )
+  }
 
   let page: React.ReactNode
   switch (location.pathname) {

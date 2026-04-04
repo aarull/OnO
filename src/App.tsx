@@ -44,6 +44,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute role="accounts" />}>
           <Route path="/dashboard/accounts" element={<AccountsDashboard />} />
+          <Route path="/dashboard/accounts/invoice/:id" element={<AccountsDashboard />} />
           <Route path="/dashboard/accounts/agency" element={<AccountsDashboard />} />
           <Route path="/dashboard/accounts/audit" element={<AccountsDashboard />} />
         </Route>
