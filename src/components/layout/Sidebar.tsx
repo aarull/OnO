@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { initials, avatarColor, cn } from '../../lib/utils'
+import logoSvg from '../../assets/logo.svg'
 
 interface SidebarItem {
   label: string
@@ -23,15 +24,27 @@ export function Sidebar({ items }: SidebarProps) {
 
   const avatar = avatarColor(user.name)
 
+  const dashboardPath =
+    user.role === 'im'
+      ? '/dashboard/im'
+      : user.role === 'accounts'
+        ? '/dashboard/accounts'
+        : '/dashboard/creator'
+
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-border bg-bg-2">
       {/* Brand */}
-      <div className="flex items-center gap-3 px-6 py-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-r bg-gradient-to-br from-accent to-accent-2 text-sm font-bold text-white">
-          IF
-        </div>
+      <Link
+        to={dashboardPath}
+        className="flex items-center gap-3 px-6 py-6 transition-opacity hover:opacity-90"
+      >
+        <img
+          src={logoSvg}
+          alt=""
+          className="h-9 w-auto shrink-0 object-contain object-left"
+        />
         <span className="text-base font-semibold text-text">OnO Creators</span>
-      </div>
+      </Link>
 
       {/* Nav */}
       <nav className="flex-1 px-3 pt-4">
