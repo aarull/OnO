@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 import { api } from '../../lib/api'
+import { invoiceHasStatus } from '../../lib/invoiceStatus'
+import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
@@ -24,6 +26,9 @@ function totalWithGst(invoice: Invoice): number {
   return invoice.amount + gstAmount(invoice)
 }
 
+/** Poll interval when Supabase Realtime is not configured */
+const POLL_MS = 45_000
+
 export function PaymentQueue() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
@@ -31,23 +36,58 @@ export function PaymentQueue() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
   const [timelineInvoice, setTimelineInvoice] = useState<Invoice | null>(null)
 
-  async function fetchInvoices() {
+  const fetchInvoices = useCallback(async (silent = false) => {
     try {
       const data = await api.get('/invoices')
-      setInvoices(data)
+      setInvoices(Array.isArray(data) ? data : [])
     } catch {
-      toast.error('Failed to load invoices')
+      if (!silent) toast.error('Failed to load invoices')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
-  }
-
-  useEffect(() => {
-    fetchInvoices()
   }, [])
 
-  const pending = invoices.filter((i) => i.status === 'im_approved')
-  const released = invoices.filter((i) => i.status === 'released')
+  useEffect(() => {
+    let cancelled = false
+    let pollId: ReturnType<typeof setInterval> | undefined
+
+    void fetchInvoices(false)
+
+    const client = supabase
+    if (client) {
+      const channel = client
+        .channel('payment-queue-invoices')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'invoices',
+          },
+          () => {
+            if (!cancelled) void fetchInvoices(true)
+          }
+        )
+        .subscribe()
+
+      return () => {
+        cancelled = true
+        void client.removeChannel(channel)
+      }
+    }
+
+    pollId = window.setInterval(() => {
+      if (!cancelled) void fetchInvoices(true)
+    }, POLL_MS)
+
+    return () => {
+      cancelled = true
+      if (pollId !== undefined) window.clearInterval(pollId)
+    }
+  }, [fetchInvoices])
+
+  const pending = invoices.filter((i) => invoiceHasStatus(i, 'im_approved'))
+  const released = invoices.filter((i) => invoiceHasStatus(i, 'released'))
   const overdue = pending.filter((i) => isOverdue(i.updated_at))
   const totalLiability = pending.reduce((sum, i) => sum + totalWithGst(i), 0)
 
@@ -66,9 +106,9 @@ export function PaymentQueue() {
       toast.success('Payment released successfully')
       setModalOpen(false)
       setSelectedInvoice(null)
-      fetchInvoices()
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to process payment')
+      void fetchInvoices(true)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to process payment')
     }
   }
 

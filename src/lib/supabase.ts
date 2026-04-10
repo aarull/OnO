@@ -1,8 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = ''
-const SUPABASE_ANON_KEY = ''
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.trim()
+const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim()
 
-export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY 
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
-  : null as any;
+/** Browser client; null when URL/key are not configured (e.g. local dev without .env) */
+export const supabase: SupabaseClient | null =
+  url && anonKey ? createClient(url, anonKey) : null
+
+export function isSupabaseAvailable(): boolean {
+  return supabase !== null
+}
