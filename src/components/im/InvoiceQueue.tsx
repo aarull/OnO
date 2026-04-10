@@ -1,18 +1,39 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
+import { invoiceHasStatus } from '../../lib/invoiceStatus'
+import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
-import { fmtAmount } from '../../lib/utils'
+import { fmtAmount, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
+async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
+  const payload = {
+    status: 'im_approved' as const,
+    rejection_note: null as string | null,
+  }
+  const client = supabase
+  if (client) {
+    const { error } = await client.from('invoices').update(payload).eq('id', invoiceId)
+    if (error) throw new Error(error.message)
+    return
+  }
+  await api.patch('/invoices/' + invoiceId + '/status', {
+    status: 'im_approved',
+    rejection_note: '',
+  })
+}
+
 export function InvoiceQueue() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [rejectedInvoices, setRejectedInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [rejectTarget, setRejectTarget] = useState<Invoice | null>(null)
   const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
+  const [resubmittingId, setResubmittingId] = useState<string | null>(null)
   const markedRef = useRef<Set<string>>(new Set())
 
   const fetchInvoices = useCallback(async () => {
@@ -21,7 +42,9 @@ export function InvoiceQueue() {
       const pending = data.filter(
         (inv) => inv.status === 'submitted' || inv.status === 'im_review'
       )
+      const rejected = data.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
       setInvoices(pending)
+      setRejectedInvoices(rejected)
 
       // Auto-mark submitted invoices as im_review
       for (const inv of pending) {
@@ -73,6 +96,20 @@ export function InvoiceQueue() {
     }
   }
 
+  async function handleFixResubmit(id: string) {
+    setResubmittingId(id)
+    try {
+      await persistResubmitAfterAuditFix(id)
+      setRejectedInvoices((prev) => prev.filter((i) => i.id !== id))
+      toast.success('Invoice returned to Accounts queue for re-audit')
+      void fetchInvoices()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to resubmit invoice')
+    } finally {
+      setResubmittingId(null)
+    }
+  }
+
   // Metrics
   const allInvoicesRef = useRef<Invoice[]>([])
   const [approvedThisMonth, setApprovedThisMonth] = useState(0)
@@ -114,6 +151,89 @@ export function InvoiceQueue() {
         <h1 className="font-serif text-2xl text-text">Invoice Queue</h1>
         <p className="mt-1 text-sm text-text-2">Invoices assigned to you for review</p>
       </div>
+
+      {rejectedInvoices.length > 0 && (
+        <section
+          className="mb-8 rounded-r-2 border border-red/25 bg-red-bg/30 p-5"
+          aria-labelledby="accounts-rejected-heading"
+        >
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2
+                id="accounts-rejected-heading"
+                className="font-serif text-lg text-text"
+              >
+                Rejected by Accounts
+              </h2>
+              <p className="mt-1 text-sm text-text-2">
+                Requires attention — address the remark below, then resubmit to Accounts.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-amber/30 bg-amber-bg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber">
+              Requires attention
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-r-2 border border-border bg-bg-2/80">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border bg-bg-3">
+                  {['Invoice', 'Creator', 'Campaign', 'Amount', 'Accounts rejection', 'Action'].map(
+                    (label) => (
+                      <th
+                        key={label}
+                        className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-3"
+                      >
+                        {label}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {rejectedInvoices.map((inv) => {
+                  const remark =
+                    inv.rejection_note?.trim() || 'No remark provided.'
+                  return (
+                    <tr
+                      key={inv.id}
+                      className="border-b border-border last:border-b-0 transition-colors hover:bg-bg-3/40"
+                    >
+                      <td className="px-4 py-3 font-mono text-xs text-accent-2">{inv.id}</td>
+                      <td className="px-4 py-3 text-text">{inv.creator_name}</td>
+                      <td className="px-4 py-3 text-text-2">{inv.campaign}</td>
+                      <td className="px-4 py-3 text-text">
+                        {fmtAmount(inv.amount)}
+                        {inv.gst && (
+                          <span className="ml-1 text-[11px] text-text-3">+GST</span>
+                        )}
+                      </td>
+                      <td className="max-w-md px-4 py-3">
+                        <div className="rounded-r border border-red/20 bg-red-bg/40 px-3 py-2 text-sm leading-relaxed text-red">
+                          {remark}
+                        </div>
+                        <p className="mt-1 text-[11px] text-text-3">
+                          Updated {timeAgo(inv.updated_at)}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <button
+                          type="button"
+                          disabled={resubmittingId === inv.id}
+                          onClick={() => void handleFixResubmit(inv.id)}
+                          className="rounded-r border border-accent/40 bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25 disabled:opacity-50"
+                        >
+                          {resubmittingId === inv.id ? 'Submitting…' : 'Fix & Resubmit'}
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Metrics */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
