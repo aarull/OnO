@@ -67,9 +67,10 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
   }, [open])
 
   if (!invoice) return null
+  const inv = invoice
 
-  const base = invoice.amount
-  const gst = gstAmount(invoice)
+  const base = inv.amount
+  const gst = gstAmount(inv)
   const tdsAmount = applyTds ? roundMoney(base * 0.01) : 0
   const finalPayable = roundMoney(base + gst - tdsAmount)
 
@@ -81,7 +82,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
   async function handleClearForPayment() {
     setSubmitting(true)
     try {
-      await persistInvoiceUpdate(invoice.id, {
+      await persistInvoiceUpdate(inv.id, {
         status: 'audit_cleared',
         tds_amount: tdsAmount,
         final_payable_amount: finalPayable,
@@ -104,7 +105,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
     }
     setSubmitting(true)
     try {
-      await persistInvoiceUpdate(invoice.id, {
+      await persistInvoiceUpdate(inv.id, {
         status: 'audit_rejected',
         rejection_note: remark,
       })
@@ -125,8 +126,8 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
       title={rejectMode ? 'Reject invoice' : 'Audit invoice'}
       subtitle={
         rejectMode
-          ? `${invoice.id} · ${invoice.creator_name}`
-          : `${invoice.id} · ${invoice.creator_name} · ${invoice.campaign}`
+          ? `${inv.id} · ${inv.creator_name}`
+          : `${inv.id} · ${inv.creator_name} · ${inv.campaign}`
       }
       footer={
         rejectMode ? (
@@ -192,7 +193,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
               <span className="font-medium text-text">{fmtAmount(base)}</span>
             </div>
             <div className="mt-2 flex justify-between gap-4 text-text-2">
-              <span>GST {invoice.gst ? '(18%)' : ''}</span>
+              <span>GST {inv.gst ? '(18%)' : ''}</span>
               <span className="font-medium text-text">
                 {gst > 0 ? fmtAmount(gst) : '—'}
               </span>
@@ -547,9 +548,10 @@ export function PaymentQueue() {
   }
 
   async function handleConfirm(note: string) {
-    if (!selectedInvoice) return
+    const toRelease = selectedInvoice
+    if (!toRelease) return
     try {
-      await api.patch(`/invoices/${selectedInvoice.id}/status`, {
+      await api.patch(`/invoices/${toRelease.id}/status`, {
         status: 'released',
         note: note || undefined,
       })
