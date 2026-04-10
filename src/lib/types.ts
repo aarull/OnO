@@ -24,6 +24,9 @@ export interface Invoice {
   account_no: string
   ifsc: string
   assigned_im: string
+  /** Optional override; otherwise IM_PHONE_DIRECTORY lookup by assigned_im */
+  assigned_im_phone?: string
+  invoice_number?: string
   /** Present when creator uploaded a PDF; fetch with auth to open/download */
   invoice_file_url?: string
   status: InvoiceStatus

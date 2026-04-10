@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
+import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocumentActions'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { PageHeader } from '../layout/PageHeader'
@@ -8,14 +10,35 @@ import { MetricsGrid } from '../shared/MetricsGrid'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceTable } from '../shared/InvoiceTable'
 import { StatusBadge } from '../shared/StatusBadge'
-import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
+
+const IM_PHONE_DIRECTORY: Record<string, string> = {
+  'Arnav Pratap Singh': '919220605836',
+  'Riya Garg': '917455926116',
+  'Aman Pachisia': '919220605814',
+  'Bhumika Sharma': '919871249753',
+  'Prerna Chaturvedi': '919997179214',
+}
 
 export function InvoiceList() {
   const navigate = useNavigate()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+
+  const handleWhatsAppReminder = (invoice: Invoice) => {
+    const imName = invoice.assigned_im || 'Team'
+    const invNumber = invoice.invoice_number || 'this invoice'
+    const phone = invoice.assigned_im_phone ?? IM_PHONE_DIRECTORY[imName]
+
+    if (!phone) {
+      toast.error('No contact number assigned.')
+      return
+    }
+
+    const message = `Hi ${imName}, this is a gentle reminder regarding the payment for Invoice #${invNumber}. Could you please check the status?`
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank')
+  }
 
   useEffect(() => {
     api
@@ -65,8 +88,62 @@ export function InvoiceList() {
     {
       key: 'action',
       label: 'Action',
-      render: (row: Invoice) => (
-        <InvoicePdfActions invoice={row} onViewTimeline={setSelectedInvoice} />
+      render: (invoice: Invoice) => (
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="text-accent transition-opacity hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation()
+              void handleInvoiceView(invoice, setSelectedInvoice)
+            }}
+          >
+            View
+          </button>
+          <span className="text-border">·</span>
+          <button
+            type="button"
+            className="text-accent transition-opacity hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation()
+              void handleInvoiceDownload(invoice)
+            }}
+          >
+            Download
+          </button>
+
+          {(invoice.status === 'im_review' || invoice.status === 'im_approved') && (
+            <>
+              <span className="text-border">·</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleWhatsAppReminder(invoice)
+                }}
+                title="Send Reminder to IM Team"
+                className="flex items-center gap-1 text-gray-400 transition-colors hover:text-[#25D366]"
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+                </svg>
+                Remind
+              </button>
+            </>
+          )}
+        </div>
       ),
     },
   ]
