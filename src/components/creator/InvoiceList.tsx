@@ -28,7 +28,7 @@ export function InvoiceList() {
 
   const handleWhatsAppReminder = (invoice: Invoice) => {
     const imName = invoice.assigned_im || 'Team'
-    const invNumber = invoice.invoice_number || 'this invoice'
+    const invNumber = invoice.invoice_number ?? invoice.id
     const phone = invoice.assigned_im_phone ?? IM_PHONE_DIRECTORY[imName]
 
     if (!phone) {
