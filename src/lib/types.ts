@@ -1,6 +1,13 @@
 export type Role = 'creator' | 'im' | 'accounts'
 
-export type InvoiceStatus = 'submitted' | 'im_review' | 'im_approved' | 'released' | 'rejected'
+export type InvoiceStatus =
+  | 'submitted'
+  | 'im_review'
+  | 'im_approved'
+  | 'audit_cleared'
+  | 'audit_rejected'
+  | 'released'
+  | 'rejected'
 
 export interface Profile {
   id: string
@@ -31,6 +38,10 @@ export interface Invoice {
   invoice_file_url?: string
   status: InvoiceStatus
   rejection_note: string
+  /** Set when auditor clears for payment (1% of base when TDS applied) */
+  tds_amount?: number | null
+  /** Base + GST − TDS after audit */
+  final_payable_amount?: number | null
   created_at: string
   updated_at: string
 }
