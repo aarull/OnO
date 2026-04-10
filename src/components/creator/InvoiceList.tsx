@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
 import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocumentActions'
+import { handleWhatsAppReminder } from '../../lib/imWhatsAppReminder'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { PageHeader } from '../layout/PageHeader'
@@ -12,33 +12,11 @@ import { InvoiceTable } from '../shared/InvoiceTable'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
-const IM_PHONE_DIRECTORY: Record<string, string> = {
-  'Arnav Pratap Singh': '919220605836',
-  'Riya Garg': '917455926116',
-  'Aman Pachisia': '919220605814',
-  'Bhumika Sharma': '919871249753',
-  'Prerna Chaturvedi': '919997179214',
-}
-
 export function InvoiceList() {
   const navigate = useNavigate()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
-
-  const handleWhatsAppReminder = (invoice: Invoice) => {
-    const imName = invoice.assigned_im || 'Team'
-    const invNumber = invoice.invoice_number ?? invoice.id
-    const phone = invoice.assigned_im_phone ?? IM_PHONE_DIRECTORY[imName]
-
-    if (!phone) {
-      toast.error('No contact number assigned.')
-      return
-    }
-
-    const message = `Hi ${imName}, this is a gentle reminder regarding the payment for Invoice #${invNumber}. Could you please check the status?`
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank')
-  }
 
   useEffect(() => {
     api
