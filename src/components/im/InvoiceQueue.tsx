@@ -144,9 +144,14 @@ export function InvoiceQueue() {
 
   async function handleFixResubmitAccountsSubmit(invoiceId: string, amount: number) {
     try {
+      // TEMP: verify what we're sending (remove after confirming)
+      console.log('Resubmitting with:', { id: invoiceId, updatedAmount: amount })
+
       await persistInvoiceFullUpdate(invoiceId, {
         status: 'im_approved',
-        amount,
+        // Backend column is `base_amount` (API may also accept `amount`)
+        base_amount: Number(amount),
+        amount: Number(amount),
         rejection_note: null,
         final_payable_amount: null,
         tds_amount: null,
