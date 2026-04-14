@@ -9,7 +9,7 @@ interface FixResubmitAccountsModalProps {
   open: boolean
   onClose: () => void
   invoice: Invoice | null
-  onSubmit: (invoiceId: string, amount: number) => Promise<void>
+  onSubmit: (invoice: Invoice, amount: number) => Promise<void>
 }
 
 export function FixResubmitAccountsModal({
@@ -42,7 +42,7 @@ export function FixResubmitAccountsModal({
     }
     setSubmitting(true)
     try {
-      await onSubmit(invoice.id, n)
+      await onSubmit(invoice, n)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to resubmit')
     } finally {

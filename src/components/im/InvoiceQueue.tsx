@@ -40,6 +40,28 @@ async function persistInvoiceFullUpdate(
   await api.patch('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
 }
 
+function resolveInvoicePrimaryKey(inv: Record<string, unknown>): string {
+  // We have seen environments where `invoice_number` looks like "INV-2026-0016"
+  // and the DB primary key is a UUID-like field. Prefer explicit PK fields first.
+  const candidates = [
+    inv.id,
+    inv.invoice_id,
+    inv.invoice_uuid,
+    inv.uuid,
+    inv.db_id,
+  ]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim().length > 0) {
+      // If this looks like an invoice_number, keep searching.
+      if (/^INV-\d{4}-\d+/i.test(c.trim())) continue
+      return c.trim()
+    }
+  }
+  // Fall back to id if nothing else is present.
+  if (typeof inv.id === 'string' && inv.id.trim().length > 0) return inv.id.trim()
+  return ''
+}
+
 async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
   await persistInvoiceUpdate(invoiceId, {
     status: 'im_approved',
@@ -61,6 +83,10 @@ export function InvoiceQueue() {
   const fetchInvoices = useCallback(async () => {
     try {
       const data: Invoice[] = await api.get('/invoices')
+      // TEMP: inspect invoice identifier fields (remove after confirming)
+      if (Array.isArray(data) && data.length > 0) {
+        console.log('[IM Queue] invoice shape sample:', data[0])
+      }
       const pending = data.filter((inv) => {
         const s = normalizeInvoiceStatus(inv.status)
         return (
@@ -138,12 +164,22 @@ export function InvoiceQueue() {
     }
   }
 
-  async function handleFixResubmitAccountsSubmit(invoiceId: string, amount: number) {
+  async function handleFixResubmitAccountsSubmit(invoice: Invoice, amount: number) {
     try {
+      const pk = resolveInvoicePrimaryKey(invoice as unknown as Record<string, unknown>)
       // TEMP: verify what we're sending (remove after confirming)
-      console.log('Resubmitting with:', { id: invoiceId, updatedAmount: amount })
+      console.log('Resubmitting with:', {
+        invoice_number: invoice.invoice_number,
+        id: invoice.id,
+        pk,
+        updatedAmount: amount,
+      })
+      if (!pk) {
+        toast.error('Missing invoice primary key (cannot resubmit)')
+        return
+      }
 
-      await persistInvoiceFullUpdate(invoiceId, {
+      await persistInvoiceFullUpdate(pk, {
         status: 'im_approved',
         // Backend column is `base_amount` (API may also accept `amount`)
         base_amount: Number(amount),
