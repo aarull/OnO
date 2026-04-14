@@ -85,6 +85,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
       await persistInvoiceUpdate(inv.id, {
         status: 'audit_cleared',
         tds_amount: tdsAmount,
+        tds_deducted: applyTds,
         final_payable_amount: finalPayable,
       })
       toast.success('Cleared for payment')

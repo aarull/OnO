@@ -40,6 +40,8 @@ export interface Invoice {
   rejection_note: string
   /** Set when auditor clears for payment (1% of base when TDS applied) */
   tds_amount?: number | null
+  /** True when AP auditor applied 1% TDS on clear for payment */
+  tds_deducted?: boolean | null
   /** Base + GST − TDS after audit */
   final_payable_amount?: number | null
   created_at: string

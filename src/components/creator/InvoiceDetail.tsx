@@ -76,7 +76,14 @@ export function InvoiceDetail({
   }
 
   const gstAmount = invoice.gst ? invoice.amount * 0.18 : 0
-  const totalPayable = invoice.amount + gstAmount
+  const subtotalBeforeTds = invoice.amount + gstAmount
+  const hasFinalPayable =
+    invoice.final_payable_amount != null &&
+    !Number.isNaN(Number(invoice.final_payable_amount))
+  const totalPayable = hasFinalPayable
+    ? Number(invoice.final_payable_amount)
+    : subtotalBeforeTds
+  const tdsDisplay = Math.abs(Number(invoice.tds_amount ?? 0))
 
   return (
     <>
@@ -179,6 +186,14 @@ export function InvoiceDetail({
                 <dt className="text-sm text-text-2">GST (18%)</dt>
                 <dd className="text-sm font-medium text-text">
                   {fmtAmount(gstAmount)}
+                </dd>
+              </div>
+            )}
+            {invoice.tds_deducted === true && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">TDS (1%)</dt>
+                <dd className="text-sm font-medium text-amber">
+                  −{fmtAmount(tdsDisplay)}
                 </dd>
               </div>
             )}
