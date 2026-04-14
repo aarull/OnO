@@ -24,6 +24,26 @@ async function persistInvoiceUpdate(
   await api.patch('/invoices/' + invoiceId + '/status', fields)
 }
 
+async function persistInvoiceFullUpdate(
+  invoiceId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  const client = supabase
+  if (client) {
+    const { error } = await client.from('invoices').update(fields).eq('id', invoiceId)
+    if (error) throw new Error(error.message)
+    return
+  }
+
+  // Prefer a full invoice update endpoint (supports `amount` updates).
+  // Fallback to `/status` for backends that accept extra fields there.
+  try {
+    await api.patch('/invoices/' + invoiceId, fields)
+  } catch {
+    await api.patch('/invoices/' + invoiceId + '/status', fields)
+  }
+}
+
 async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
   await persistInvoiceUpdate(invoiceId, {
     status: 'im_approved',
@@ -124,7 +144,7 @@ export function InvoiceQueue() {
 
   async function handleFixResubmitAccountsSubmit(invoiceId: string, amount: number) {
     try {
-      await persistInvoiceUpdate(invoiceId, {
+      await persistInvoiceFullUpdate(invoiceId, {
         status: 'im_approved',
         amount,
         rejection_note: null,

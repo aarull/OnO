@@ -26,6 +26,11 @@ export function FixResubmitAccountsModal({
       setAmountStr(String(invoice.amount))
       setSubmitting(false)
     }
+    if (!open) {
+      // Ensure stale values don't persist between opens
+      setAmountStr('')
+      setSubmitting(false)
+    }
   }, [open, invoice])
 
   async function handleSubmit() {
