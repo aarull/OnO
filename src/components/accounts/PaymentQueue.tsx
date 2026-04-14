@@ -250,7 +250,11 @@ function AuditorQueue({
 }) {
   const [auditInvoice, setAuditInvoice] = useState<Invoice | null>(null)
   const queue = useMemo(
-    () => invoices.filter((i) => invoiceHasStatus(i, 'im_approved')),
+    () =>
+      invoices.filter(
+        (i) =>
+          invoiceHasStatus(i, 'im_approved') || invoiceHasStatus(i, 'payer_rejected_audit')
+      ),
     [invoices]
   )
 
@@ -565,6 +569,49 @@ export function PaymentQueue() {
     }
   }
 
+  async function handlePayerReject(
+    status: 'payer_rejected_audit' | 'payer_rejected_im',
+    remark: string
+  ) {
+    const inv = selectedInvoice
+    if (!inv) return
+    const trimmed = remark.trim()
+    if (!trimmed) {
+      toast.error('Rejection remark is required')
+      return
+    }
+
+    setInvoices((prev) =>
+      prev.map((i) =>
+        i.id === inv.id
+          ? {
+              ...i,
+              status,
+              rejection_note: trimmed,
+              updated_at: new Date().toISOString(),
+            }
+          : i
+      )
+    )
+    setModalOpen(false)
+    setSelectedInvoice(null)
+
+    try {
+      await persistInvoiceUpdate(inv.id, {
+        status,
+        rejection_note: trimmed,
+      })
+      toast.success(
+        status === 'payer_rejected_audit'
+          ? 'Returned to AP Auditor for review'
+          : 'Returned to IM team'
+      )
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reject payment')
+      void fetchInvoices(true)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -652,6 +699,7 @@ export function PaymentQueue() {
         invoiceId={selectedInvoice?.id ?? ''}
         creatorName={selectedInvoice?.creator_name ?? ''}
         onConfirm={handleConfirm}
+        onRejectPayout={handlePayerReject}
       />
     </div>
   )

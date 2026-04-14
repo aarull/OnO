@@ -54,7 +54,9 @@ export function AgencyView() {
   const pendingIM = invoices.filter(
     (i) => i.status === 'submitted' || i.status === 'im_review'
   )
-  const pendingPayments = invoices.filter((i) => i.status === 'im_approved')
+  const pendingPayments = invoices.filter(
+    (i) => i.status === 'im_approved' || i.status === 'payer_rejected_audit'
+  )
   const payoutLiability = invoices
     .filter((i) => i.status !== 'released' && i.status !== 'rejected')
     .reduce((sum, i) => sum + i.amount + (i.gst ? i.amount * 0.18 : 0), 0)

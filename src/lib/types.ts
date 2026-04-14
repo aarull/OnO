@@ -6,6 +6,8 @@ export type InvoiceStatus =
   | 'im_approved'
   | 'audit_cleared'
   | 'audit_rejected'
+  | 'payer_rejected_audit'
+  | 'payer_rejected_im'
   | 'released'
   | 'rejected'
 

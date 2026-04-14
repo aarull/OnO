@@ -6,6 +6,8 @@ const STATUS_LABEL: Record<InvoiceStatus, string> = {
   im_approved: 'IM approved',
   audit_cleared: 'Audit Cleared',
   audit_rejected: 'Audit Rejected',
+  payer_rejected_audit: 'Payment rejected (audit)',
+  payer_rejected_im: 'Payment rejected (IM)',
   released: 'Payment released',
   rejected: 'Rejected',
 }

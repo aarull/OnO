@@ -40,7 +40,10 @@ export function InvoiceQueue() {
     try {
       const data: Invoice[] = await api.get('/invoices')
       const pending = data.filter(
-        (inv) => inv.status === 'submitted' || inv.status === 'im_review'
+        (inv) =>
+          inv.status === 'submitted' ||
+          inv.status === 'im_review' ||
+          inv.status === 'payer_rejected_im'
       )
       const rejected = data.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
       setInvoices(pending)
