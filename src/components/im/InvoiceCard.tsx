@@ -25,24 +25,27 @@ export function InvoiceCard({
 }: InvoiceCardProps) {
   const avatar = avatarColor(invoice.creator_name)
   const isPayerRejectedIm = invoiceHasStatus(invoice, 'payer_rejected_im')
-  const accountsRemark = invoice.rejection_note?.trim() ?? ''
+  const payerRemark = invoice.rejection_note?.trim() ?? ''
 
   return (
     <div
       className={cn(
-        'animate-fade-up rounded-r-2 border bg-bg-2 p-5',
+        'animate-fade-up rounded-r-2 border border-border bg-bg-2 p-5 transition-colors',
         isPayerRejectedIm
-          ? 'border-l-2 border-l-amber/60 border-amber/30 bg-gradient-to-br from-amber/[0.06] via-bg-2 to-red/[0.04] shadow-[0_0_0_1px_rgba(248,113,113,0.08)]'
-          : 'border-border'
+          ? cn(
+              'border-b border-border border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50%',
+              'hover:from-amber/[0.11]'
+            )
+          : 'hover:bg-bg-3/50'
       )}
     >
-      {/* Header: Invoice ID + time */}
+      {/* Header: Invoice ID + flag chip + time (mirrors AuditorQueue flag column) */}
       <div className="mb-4 flex items-center justify-between gap-2">
         <span className="font-mono text-xs text-accent-2">{invoice.id}</span>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {isPayerRejectedIm && (
-            <span className="rounded-full border border-red/30 bg-red/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red">
-              Accounts return
+            <span className="inline-flex items-center rounded-full border border-amber/35 bg-amber/10 px-2 py-0.5 text-[11px] font-medium text-amber">
+              Payer return
             </span>
           )}
           <span className="text-xs text-text-3">{timeAgo(invoice.created_at)}</span>
@@ -74,13 +77,19 @@ export function InvoiceCard({
         )}
       </p>
 
+      {/* Same block as AuditorQueue second <tr> (payer remark row) */}
       {isPayerRejectedIm && (
-        <div className="mb-4 rounded-r border border-amber/35 bg-red/[0.06] px-3 py-2.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber">
-            Accounts remark
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-text">
-            {accountsRemark.length > 0 ? accountsRemark : '—'}
+        <div
+          className={cn(
+            'mb-4 rounded-r border-b border-border border-l-2 border-l-amber/55 bg-red/[0.05]',
+            'px-4 py-3 pl-5 hover:bg-red/[0.07] transition-colors'
+          )}
+        >
+          <p className="text-sm leading-relaxed text-text">
+            <span className="font-semibold text-amber">Payer remark: </span>
+            <span className="text-text">
+              {payerRemark.length > 0 ? payerRemark : '—'}
+            </span>
           </p>
         </div>
       )}
@@ -111,7 +120,7 @@ export function InvoiceCard({
             className="flex-1 border border-amber/35"
             onClick={() => onFixResubmitAccounts?.(invoice)}
           >
-            Fix & resubmit to Accounts
+            Fix base amount
           </Button>
         </div>
       ) : (

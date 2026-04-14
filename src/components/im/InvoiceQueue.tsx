@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
-import { invoiceHasStatus } from '../../lib/invoiceStatus'
+import { invoiceHasStatus, normalizeInvoiceStatus } from '../../lib/invoiceStatus'
 import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
@@ -45,19 +45,21 @@ export function InvoiceQueue() {
   const fetchInvoices = useCallback(async () => {
     try {
       const data: Invoice[] = await api.get('/invoices')
-      const pending = data.filter(
-        (inv) =>
-          invoiceHasStatus(inv, 'submitted') ||
-          invoiceHasStatus(inv, 'im_review') ||
-          invoiceHasStatus(inv, 'payer_rejected_im')
-      )
+      const pending = data.filter((inv) => {
+        const s = normalizeInvoiceStatus(inv.status)
+        return (
+          s === 'submitted' ||
+          s === 'im_review' ||
+          s === 'payer_rejected_im'
+        )
+      })
       const rejected = data.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
       setInvoices(pending)
       setRejectedInvoices(rejected)
 
       // Auto-mark submitted invoices as im_review
       for (const inv of pending) {
-        if (invoiceHasStatus(inv, 'submitted') && !markedRef.current.has(inv.id)) {
+        if (normalizeInvoiceStatus(inv.status) === 'submitted' && !markedRef.current.has(inv.id)) {
           markedRef.current.add(inv.id)
           api.patch('/invoices/' + inv.id + '/status', { status: 'im_review' }).catch(() => {
             markedRef.current.delete(inv.id)
@@ -127,7 +129,7 @@ export function InvoiceQueue() {
         amount,
         rejection_note: null,
       })
-      toast.success('Updated and sent back to Accounts for audit')
+      toast.success('Base amount updated — sent back to Accounts (audit cleared)')
       setFixResubmitInvoice(null)
       fetchInvoices()
     } catch (err: unknown) {

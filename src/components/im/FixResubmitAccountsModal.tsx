@@ -56,8 +56,8 @@ export function FixResubmitAccountsModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Fix & resubmit to Accounts"
-      subtitle={`${invoice.id} · ${invoice.creator_name} — only the base amount can be changed.`}
+      title="Fix base amount"
+      subtitle={`${invoice.id} · ${invoice.creator_name} — base amount only.`}
       footer={
         <>
           <Button variant="outline" size="sm" disabled={submitting} onClick={handleClose}>
@@ -69,7 +69,7 @@ export function FixResubmitAccountsModal({
             disabled={submitting}
             onClick={() => void handleSubmit()}
           >
-            {submitting ? 'Submitting…' : 'Submit to Accounts'}
+            {submitting ? 'Saving…' : 'Save'}
           </Button>
         </>
       }
