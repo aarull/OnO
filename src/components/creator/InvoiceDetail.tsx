@@ -83,7 +83,9 @@ export function InvoiceDetail({
   const finalPaymentAmount = hasFinalPayable
     ? Number(invoice.final_payable_amount)
     : subtotalBeforeTds
-  const tdsDisplay = Math.abs(Number(invoice.tds_amount ?? 0))
+  const tdsAmountNum = Number(invoice.tds_amount)
+  const showTdsRow =
+    invoice.tds_amount != null && !Number.isNaN(tdsAmountNum) && tdsAmountNum > 0
   const gstNumberDisplay =
     invoice.gst_number?.trim() ? invoice.gst_number.trim() : 'N/A'
   const accountHolderDisplay =
@@ -167,11 +169,11 @@ export function InvoiceDetail({
                 {fmtAmount(invoice.amount)}
               </dd>
             </div>
-            {invoice.tds_deducted === true && (
+            {showTdsRow && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">TDS (1%)</dt>
-                <dd className="text-sm font-medium text-red">
-                  −{fmtAmount(tdsDisplay)}
+                <dd className="text-sm font-medium text-amber">
+                  −{fmtAmount(tdsAmountNum)}
                 </dd>
               </div>
             )}
