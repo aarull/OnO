@@ -176,15 +176,21 @@ export function InvoiceQueue() {
 
   async function handleFixResubmitAccountsSubmit(invoice: Invoice, amount: number) {
     try {
+      const uuid = invoice.id
+      if (typeof uuid === 'string' && uuid.startsWith('INV-')) {
+        console.error('ERROR: Still using Display Number instead of UUID')
+      }
+
       // TEMP: verify what we're sending (remove after confirming)
       console.log('Resubmitting with:', {
         invoice_number: invoice.invoice_number,
         id: invoice.id,
+        uuid,
         updatedAmount: amount,
       })
 
       // STRICT: backend expects UUID/PK in `invoice.id` (never invoice_number).
-      await persistInvoiceFullUpdate(invoice.id, {
+      await persistInvoiceFullUpdate(uuid, {
         status: 'im_approved',
         // Backend column is `base_amount` (API may also accept `amount`)
         base_amount: Number(amount),
