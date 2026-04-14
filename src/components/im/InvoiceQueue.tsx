@@ -37,29 +37,38 @@ async function persistInvoiceFullUpdate(
 
   // Use the known working route in this app.
   // Backend may accept extra fields like `base_amount` on this route.
-  await api.patch('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
+  try {
+    await api.patch('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
+  } catch {
+    // Some deployments may expose POST instead of PATCH for status updates.
+    await api.post('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
+  }
 }
 
-function resolveInvoicePrimaryKey(inv: Record<string, unknown>): string {
-  // We have seen environments where `invoice_number` looks like "INV-2026-0016"
-  // and the DB primary key is a UUID-like field. Prefer explicit PK fields first.
-  const candidates = [
-    inv.id,
-    inv.invoice_id,
-    inv.invoice_uuid,
-    inv.uuid,
-    inv.db_id,
-  ]
-  for (const c of candidates) {
-    if (typeof c === 'string' && c.trim().length > 0) {
-      // If this looks like an invoice_number, keep searching.
-      if (/^INV-\d{4}-\d+/i.test(c.trim())) continue
-      return c.trim()
+function normalizeInvoiceIds(invoices: Invoice[]): Invoice[] {
+  return invoices.map((inv) => {
+    const anyInv = inv as unknown as Record<string, unknown>
+    const id = typeof inv.id === 'string' ? inv.id.trim() : ''
+    const looksLikeDisplayNumber = /^INV-\d{4}-\d+/i.test(id)
+    if (!looksLikeDisplayNumber) return inv
+
+    const pkCandidate =
+      (typeof anyInv.invoice_id === 'string' && anyInv.invoice_id.trim()) ||
+      (typeof anyInv.invoice_uuid === 'string' && anyInv.invoice_uuid.trim()) ||
+      (typeof anyInv.uuid === 'string' && anyInv.uuid.trim()) ||
+      (typeof anyInv.db_id === 'string' && anyInv.db_id.trim()) ||
+      ''
+
+    if (!pkCandidate) return inv
+
+    // Force `invoice.id` to be the DB PK (UUID) so all URL templates use UUIDs.
+    // Preserve the display number in `invoice_number` for UI/WhatsApp copy.
+    return {
+      ...inv,
+      id: pkCandidate,
+      invoice_number: inv.invoice_number ?? id,
     }
-  }
-  // Fall back to id if nothing else is present.
-  if (typeof inv.id === 'string' && inv.id.trim().length > 0) return inv.id.trim()
-  return ''
+  })
 }
 
 async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
@@ -83,11 +92,12 @@ export function InvoiceQueue() {
   const fetchInvoices = useCallback(async () => {
     try {
       const data: Invoice[] = await api.get('/invoices')
+      const normalized = normalizeInvoiceIds(Array.isArray(data) ? data : [])
       // TEMP: inspect invoice identifier fields (remove after confirming)
-      if (Array.isArray(data) && data.length > 0) {
-        console.log('[IM Queue] invoice shape sample:', data[0])
+      if (normalized.length > 0) {
+        console.log('[IM Queue] invoice shape sample:', normalized[0])
       }
-      const pending = data.filter((inv) => {
+      const pending = normalized.filter((inv) => {
         const s = normalizeInvoiceStatus(inv.status)
         return (
           s === 'submitted' ||
@@ -95,7 +105,7 @@ export function InvoiceQueue() {
           s === 'payer_rejected_im'
         )
       })
-      const rejected = data.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
+      const rejected = normalized.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
       setInvoices(pending)
       setRejectedInvoices(rejected)
 
@@ -166,20 +176,15 @@ export function InvoiceQueue() {
 
   async function handleFixResubmitAccountsSubmit(invoice: Invoice, amount: number) {
     try {
-      const pk = resolveInvoicePrimaryKey(invoice as unknown as Record<string, unknown>)
       // TEMP: verify what we're sending (remove after confirming)
       console.log('Resubmitting with:', {
         invoice_number: invoice.invoice_number,
         id: invoice.id,
-        pk,
         updatedAmount: amount,
       })
-      if (!pk) {
-        toast.error('Missing invoice primary key (cannot resubmit)')
-        return
-      }
 
-      await persistInvoiceFullUpdate(pk, {
+      // STRICT: backend expects UUID/PK in `invoice.id` (never invoice_number).
+      await persistInvoiceFullUpdate(invoice.id, {
         status: 'im_approved',
         // Backend column is `base_amount` (API may also accept `amount`)
         base_amount: Number(amount),
