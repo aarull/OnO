@@ -8,22 +8,26 @@ import { fmtAmount, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
+import { FixResubmitAccountsModal } from './FixResubmitAccountsModal'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 
-async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
-  const payload = {
-    status: 'im_approved' as const,
-    rejection_note: null as string | null,
-  }
+async function persistInvoiceUpdate(
+  invoiceId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
   const client = supabase
   if (client) {
-    const { error } = await client.from('invoices').update(payload).eq('id', invoiceId)
+    const { error } = await client.from('invoices').update(fields).eq('id', invoiceId)
     if (error) throw new Error(error.message)
     return
   }
-  await api.patch('/invoices/' + invoiceId + '/status', {
+  await api.patch('/invoices/' + invoiceId + '/status', fields)
+}
+
+async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
+  await persistInvoiceUpdate(invoiceId, {
     status: 'im_approved',
-    rejection_note: '',
+    rejection_note: null,
   })
 }
 
@@ -32,6 +36,8 @@ export function InvoiceQueue() {
   const [rejectedInvoices, setRejectedInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [rejectTarget, setRejectTarget] = useState<Invoice | null>(null)
+  const [payerCreatorRejectInvoice, setPayerCreatorRejectInvoice] = useState<Invoice | null>(null)
+  const [fixResubmitInvoice, setFixResubmitInvoice] = useState<Invoice | null>(null)
   const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
   const [resubmittingId, setResubmittingId] = useState<string | null>(null)
   const markedRef = useRef<Set<string>>(new Set())
@@ -41,9 +47,9 @@ export function InvoiceQueue() {
       const data: Invoice[] = await api.get('/invoices')
       const pending = data.filter(
         (inv) =>
-          inv.status === 'submitted' ||
-          inv.status === 'im_review' ||
-          inv.status === 'payer_rejected_im'
+          invoiceHasStatus(inv, 'submitted') ||
+          invoiceHasStatus(inv, 'im_review') ||
+          invoiceHasStatus(inv, 'payer_rejected_im')
       )
       const rejected = data.filter((inv) => invoiceHasStatus(inv, 'audit_rejected'))
       setInvoices(pending)
@@ -51,7 +57,7 @@ export function InvoiceQueue() {
 
       // Auto-mark submitted invoices as im_review
       for (const inv of pending) {
-        if (inv.status === 'submitted' && !markedRef.current.has(inv.id)) {
+        if (invoiceHasStatus(inv, 'submitted') && !markedRef.current.has(inv.id)) {
           markedRef.current.add(inv.id)
           api.patch('/invoices/' + inv.id + '/status', { status: 'im_review' }).catch(() => {
             markedRef.current.delete(inv.id)
@@ -71,7 +77,7 @@ export function InvoiceQueue() {
 
   async function handleApprove(id: string) {
     try {
-      await api.patch('/invoices/' + id + '/status', { status: 'im_approved' })
+      await persistInvoiceUpdate(id, { status: 'im_approved' })
       toast.success('Invoice approved! Sent to Accounts ✅')
       fetchInvoices()
     } catch {
@@ -87,7 +93,7 @@ export function InvoiceQueue() {
   async function handleRejectConfirm(reason: string) {
     if (!rejectTarget) return
     try {
-      await api.patch('/invoices/' + rejectTarget.id + '/status', {
+      await persistInvoiceUpdate(rejectTarget.id, {
         status: 'rejected',
         rejection_note: reason,
       })
@@ -96,6 +102,36 @@ export function InvoiceQueue() {
       fetchInvoices()
     } catch {
       toast.error('Failed to reject invoice')
+    }
+  }
+
+  async function handlePayerRejectToCreator(reason: string) {
+    if (!payerCreatorRejectInvoice) return
+    try {
+      await persistInvoiceUpdate(payerCreatorRejectInvoice.id, {
+        status: 'rejected',
+        rejection_note: reason,
+      })
+      toast.success('Invoice returned to creator')
+      setPayerCreatorRejectInvoice(null)
+      fetchInvoices()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reject invoice')
+    }
+  }
+
+  async function handleFixResubmitAccountsSubmit(invoiceId: string, amount: number) {
+    try {
+      await persistInvoiceUpdate(invoiceId, {
+        status: 'audit_cleared',
+        amount,
+        rejection_note: null,
+      })
+      toast.success('Updated and sent back to Accounts for audit')
+      setFixResubmitInvoice(null)
+      fetchInvoices()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to resubmit')
     }
   }
 
@@ -263,19 +299,43 @@ export function InvoiceQueue() {
               invoice={inv}
               onApprove={handleApprove}
               onReject={handleRejectClick}
+              onRejectToCreator={(id) => {
+                const row = invoices.find((i) => i.id === id)
+                if (row) setPayerCreatorRejectInvoice(row)
+              }}
+              onFixResubmitAccounts={(i) => setFixResubmitInvoice(i)}
               onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
             />
           ))}
         </div>
       )}
 
-      {/* Reject Modal */}
+      {/* Reject Modal (standard IM review) */}
       <RejectModal
         open={!!rejectTarget}
         onClose={() => setRejectTarget(null)}
         invoiceId={rejectTarget?.id ?? ''}
         creatorName={rejectTarget?.creator_name ?? ''}
         onConfirm={handleRejectConfirm}
+      />
+
+      {/* Reject to creator (payer-returned lane) */}
+      <RejectModal
+        open={!!payerCreatorRejectInvoice}
+        onClose={() => setPayerCreatorRejectInvoice(null)}
+        invoiceId={payerCreatorRejectInvoice?.id ?? ''}
+        creatorName={payerCreatorRejectInvoice?.creator_name ?? ''}
+        title="Reject to creator"
+        confirmLabel="Reject to creator"
+        reasonLabel="Remark for creator"
+        onConfirm={handlePayerRejectToCreator}
+      />
+
+      <FixResubmitAccountsModal
+        open={!!fixResubmitInvoice}
+        invoice={fixResubmitInvoice}
+        onClose={() => setFixResubmitInvoice(null)}
+        onSubmit={handleFixResubmitAccountsSubmit}
       />
     </div>
   )

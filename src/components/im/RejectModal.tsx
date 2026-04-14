@@ -8,9 +8,24 @@ interface RejectModalProps {
   invoiceId: string
   creatorName: string
   onConfirm: (reason: string) => void
+  /** Defaults to “Reject Invoice” */
+  title?: string
+  /** Defaults to “Send Rejection” */
+  confirmLabel?: string
+  /** Defaults to “Rejection reason” */
+  reasonLabel?: string
 }
 
-export function RejectModal({ open, onClose, invoiceId, creatorName, onConfirm }: RejectModalProps) {
+export function RejectModal({
+  open,
+  onClose,
+  invoiceId,
+  creatorName,
+  onConfirm,
+  title = 'Reject Invoice',
+  confirmLabel = 'Send Rejection',
+  reasonLabel = 'Rejection reason',
+}: RejectModalProps) {
   const [reason, setReason] = useState('')
   const [error, setError] = useState(false)
 
@@ -34,7 +49,7 @@ export function RejectModal({ open, onClose, invoiceId, creatorName, onConfirm }
     <Modal
       open={open}
       onClose={handleClose}
-      title="Reject Invoice"
+      title={title}
       subtitle={`${invoiceId} · ${creatorName}`}
       footer={
         <>
@@ -42,14 +57,14 @@ export function RejectModal({ open, onClose, invoiceId, creatorName, onConfirm }
             Cancel
           </Button>
           <Button variant="red" size="sm" onClick={handleConfirm}>
-            Send Rejection
+            {confirmLabel}
           </Button>
         </>
       }
     >
       <div>
         <label className="mb-2 block text-sm font-medium text-text">
-          Rejection reason <span className="text-red">*</span>
+          {reasonLabel} <span className="text-red">*</span>
         </label>
         <textarea
           value={reason}
