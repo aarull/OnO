@@ -35,13 +35,9 @@ async function persistInvoiceFullUpdate(
     return
   }
 
-  // Prefer a full invoice update endpoint (supports `amount` updates).
-  // Fallback to `/status` for backends that accept extra fields there.
-  try {
-    await api.patch('/invoices/' + invoiceId, fields)
-  } catch {
-    await api.patch('/invoices/' + invoiceId + '/status', fields)
-  }
+  // Use the known working route in this app.
+  // Backend may accept extra fields like `base_amount` on this route.
+  await api.patch('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
 }
 
 async function persistResubmitAfterAuditFix(invoiceId: string): Promise<void> {
