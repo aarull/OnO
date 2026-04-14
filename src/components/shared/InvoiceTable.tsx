@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { cn } from '../../lib/utils'
 import { EmptyState } from './EmptyState'
 
@@ -12,12 +12,18 @@ interface InvoiceTableProps<T> {
   columns: Column<T>[]
   data: T[]
   onRowClick?: (row: T) => void
+  /** Extra classes on the main data row (e.g. warning strip for rejected) */
+  getRowClassName?: (row: T) => string | undefined
+  /** Optional second row (e.g. full-width remark); return null to skip */
+  renderSubRow?: (row: T, columnCount: number) => ReactNode | null
 }
 
 export function InvoiceTable<T extends Record<string, any>>({
   columns,
   data,
   onRowClick,
+  getRowClassName,
+  renderSubRow,
 }: InvoiceTableProps<T>) {
   if (data.length === 0) {
     return <EmptyState icon="📄" message="No invoices found" />
@@ -39,22 +45,28 @@ export function InvoiceTable<T extends Record<string, any>>({
           </tr>
         </thead>
         <tbody>
-          {data.map((row, i) => (
-            <tr
-              key={row.id ?? i}
-              onClick={() => onRowClick?.(row)}
-              className={cn(
-                'border-b border-border transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-bg-3/50'
-              )}
-            >
-              {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3 text-sm text-text">
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {data.map((row, i) => {
+            const sub = renderSubRow?.(row, columns.length)
+            return (
+              <Fragment key={row.id ?? i}>
+                <tr
+                  onClick={() => onRowClick?.(row)}
+                  className={cn(
+                    'border-b border-border transition-colors',
+                    onRowClick && 'cursor-pointer hover:bg-bg-3/50',
+                    getRowClassName?.(row)
+                  )}
+                >
+                  {columns.map((col) => (
+                    <td key={col.key} className="px-4 py-3 text-sm text-text">
+                      {col.render ? col.render(row) : row[col.key]}
+                    </td>
+                  ))}
+                </tr>
+                {sub}
+              </Fragment>
+            )
+          })}
         </tbody>
       </table>
     </div>

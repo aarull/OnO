@@ -1,39 +1,102 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
 import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocumentActions'
 import { handleWhatsAppReminder } from '../../lib/imWhatsAppReminder'
+import { normalizeInvoiceStatus } from '../../lib/invoiceStatus'
+import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
-import { fmtAmount, timeAgo } from '../../lib/utils'
+import { cn, fmtAmount, timeAgo } from '../../lib/utils'
 import { PageHeader } from '../layout/PageHeader'
 import { MetricsGrid } from '../shared/MetricsGrid'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceTable } from '../shared/InvoiceTable'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
+import {
+  CreatorFixInvoiceModal,
+  type CreatorFixInvoicePayload,
+} from './CreatorFixInvoiceModal'
+
+async function persistInvoiceUpdate(
+  invoiceId: string,
+  fields: Record<string, unknown>
+): Promise<void> {
+  const client = supabase
+  if (client) {
+    const { error } = await client.from('invoices').update(fields).eq('id', invoiceId)
+    if (error) throw new Error(error.message)
+    return
+  }
+  await api.patch('/invoices/' + invoiceId + '/status', fields)
+}
+
+function rejectedRowClass(row: Invoice): string | undefined {
+  if (normalizeInvoiceStatus(row.status) !== 'rejected') return undefined
+  return cn(
+    'border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50%',
+    'hover:from-amber/[0.11]'
+  )
+}
+
+function rejectedSubRow(row: Invoice, columnCount: number) {
+  if (normalizeInvoiceStatus(row.status) !== 'rejected') return null
+  const remark = row.rejection_note?.trim() ?? ''
+  return (
+    <tr
+      className={cn(
+        'border-b border-border border-l-2 border-l-amber/55 bg-red/[0.05]',
+        'transition-colors hover:bg-red/[0.07]'
+      )}
+    >
+      <td colSpan={columnCount} className="px-4 py-3 pl-5">
+        <p className="text-sm leading-relaxed text-text">
+          <span className="font-semibold text-amber">IM remark: </span>
+          <span className="text-text">{remark.length > 0 ? remark : '—'}</span>
+        </p>
+      </td>
+    </tr>
+  )
+}
 
 export function InvoiceList() {
   const navigate = useNavigate()
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [fixInvoice, setFixInvoice] = useState<Invoice | null>(null)
 
-  useEffect(() => {
-    api
-      .get('/invoices')
-      .then((data) => setInvoices(data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+  const fetchInvoices = useCallback(async () => {
+    try {
+      const data: Invoice[] = await api.get('/invoices')
+      setInvoices(Array.isArray(data) ? data : [])
+    } catch {
+      toast.error('Failed to load invoices')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
+  useEffect(() => {
+    void fetchInvoices()
+  }, [fetchInvoices])
+
   const totalSubmitted = invoices.length
-  const pendingReview = invoices.filter(
-    (i) => i.status === 'submitted' || i.status === 'im_review'
-  ).length
+  const pendingReview = invoices.filter((i) => {
+    const s = normalizeInvoiceStatus(i.status)
+    return s === 'submitted' || s === 'im_review' || s === 'rejected'
+  }).length
   const released = invoices.filter((i) => i.status === 'released').length
   const totalPaid = invoices
     .filter((i) => i.status === 'released')
     .reduce((sum, i) => sum + i.amount * (i.gst ? 1.18 : 1), 0)
+
+  async function handleSaveFix(id: string, payload: CreatorFixInvoicePayload) {
+    await persistInvoiceUpdate(id, { ...payload } as Record<string, unknown>)
+    toast.success('Invoice updated and resubmitted for review')
+    await fetchInvoices()
+  }
 
   const columns = [
     { key: 'id', label: 'Invoice ID' },
@@ -44,9 +107,7 @@ export function InvoiceList() {
       render: (row: Invoice) => (
         <span>
           {fmtAmount(row.amount)}
-          {row.gst && (
-            <span className="ml-1 text-[11px] text-text-3">+GST</span>
-          )}
+          {row.gst && <span className="ml-1 text-[11px] text-text-3">+GST</span>}
         </span>
       ),
     },
@@ -54,7 +115,16 @@ export function InvoiceList() {
     {
       key: 'status',
       label: 'Status',
-      render: (row: Invoice) => <StatusBadge status={row.status} />,
+      render: (row: Invoice) => (
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={row.status} />
+          {normalizeInvoiceStatus(row.status) === 'rejected' && (
+            <span className="inline-flex items-center rounded-full border border-amber/35 bg-amber/10 px-2 py-0.5 text-[11px] font-medium text-amber">
+              IM return
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'created_at',
@@ -68,7 +138,7 @@ export function InvoiceList() {
       label: 'Action',
       render: (invoice: Invoice) => (
         <div
-          className="flex items-center gap-2"
+          className="flex flex-wrap items-center gap-2"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -92,6 +162,19 @@ export function InvoiceList() {
           >
             Download
           </button>
+
+          {normalizeInvoiceStatus(invoice.status) === 'rejected' && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                setFixInvoice(invoice)
+              }}
+              className="ml-1 inline-flex items-center rounded-r bg-gradient-to-r from-accent to-accent-2 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white shadow-[0_0_12px_rgba(99,102,241,0.35)] transition-all hover:opacity-95 hover:shadow-[0_0_18px_rgba(99,102,241,0.45)]"
+            >
+              Fix & resubmit
+            </button>
+          )}
 
           {(invoice.status === 'im_review' || invoice.status === 'im_approved') && (
             <button
@@ -141,6 +224,13 @@ export function InvoiceList() {
         showReminderToggle
       />
 
+      <CreatorFixInvoiceModal
+        open={!!fixInvoice}
+        invoice={fixInvoice}
+        onClose={() => setFixInvoice(null)}
+        onSave={handleSaveFix}
+      />
+
       <PageHeader
         title="My Invoices"
         subtitle="Track all your submitted invoices and payment status"
@@ -162,6 +252,8 @@ export function InvoiceList() {
           columns={columns}
           data={invoices}
           onRowClick={(row) => setSelectedInvoice(row)}
+          getRowClassName={rejectedRowClass}
+          renderSubRow={rejectedSubRow}
         />
       </div>
     </>
