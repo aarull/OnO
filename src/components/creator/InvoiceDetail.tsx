@@ -86,12 +86,15 @@ export function InvoiceDetail({
   const tdsAmountNum = Number(invoice.tds_amount)
   const showTdsRow =
     invoice.tds_amount != null && !Number.isNaN(tdsAmountNum) && tdsAmountNum > 0
-  const gstNumberDisplay =
-    invoice.gst_number?.trim() ? invoice.gst_number.trim() : 'N/A'
   const accountHolderDisplay =
     invoice.account_holder_name?.trim() ? invoice.account_holder_name.trim() : 'N/A'
-  const panNumberRaw =
+  const gstNumberResolved =
+    invoice.gst_number?.trim() || invoice.creator?.gst_number?.trim() || ''
+  const panNumberResolved =
     invoice.pan_number?.trim() || invoice.creator?.pan_number?.trim() || ''
+  const hasGstNumber = gstNumberResolved.length > 0
+  const hasPanNumber = panNumberResolved.length > 0
+  const showTaxIdFallback = !hasGstNumber && !hasPanNumber
 
   return (
     <>
@@ -208,16 +211,24 @@ export function InvoiceDetail({
               <dt className="text-sm text-text-2">IFSC Code</dt>
               <dd className="text-sm font-medium text-text font-mono">{invoice.ifsc}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">GST Number</dt>
-              <dd className="text-sm font-medium text-text font-mono">{gstNumberDisplay}</dd>
-            </div>
-            {panNumberRaw ? (
+            {hasGstNumber && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">GST Number</dt>
+                <dd className="text-sm font-medium text-text font-mono">{gstNumberResolved}</dd>
+              </div>
+            )}
+            {hasPanNumber && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">PAN Number</dt>
-                <dd className="text-sm font-medium text-text font-mono">{panNumberRaw}</dd>
+                <dd className="text-sm font-medium text-text font-mono">{panNumberResolved}</dd>
               </div>
-            ) : null}
+            )}
+            {showTaxIdFallback && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">Tax ID</dt>
+                <dd className="text-sm font-medium text-text-3">N/A</dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>

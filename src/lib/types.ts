@@ -19,6 +19,7 @@ export interface Profile {
 }
 
 export interface InvoiceCreatorRef {
+  gst_number?: string | null
   pan_number?: string | null
 }
 
