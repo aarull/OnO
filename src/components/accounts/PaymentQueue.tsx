@@ -527,7 +527,8 @@ export function PaymentQueue() {
 
   const fetchInvoices = useCallback(async (silent = false) => {
     try {
-      const data = await api.get('/invoices')
+      // Cache-bust to ensure updated amounts show without hard refresh.
+      const data = await api.get(`/invoices?ts=${Date.now()}`)
       setInvoices(Array.isArray(data) ? data : [])
     } catch {
       if (!silent) toast.error('Failed to load invoices')
@@ -675,6 +676,8 @@ export function PaymentQueue() {
           ? 'Returned to AP Auditor for review'
           : 'Returned to IM team'
       )
+      // Ensure the payer view immediately reflects cleaned/updated invoice data.
+      void fetchInvoices(true)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to reject payment')
       void fetchInvoices(true)

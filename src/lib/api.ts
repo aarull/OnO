@@ -16,8 +16,13 @@ async function apiFetch(path: string, options: RequestInit = {}) {
   const token = getToken()
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
+    // Avoid stale dashboard data from browser/proxy caches.
+    // (We also add per-call cache busters in critical polling views.)
+    cache: options.cache ?? 'no-store',
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
