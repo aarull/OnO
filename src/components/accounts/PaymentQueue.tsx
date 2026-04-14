@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
@@ -87,6 +87,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
         tds_amount: tdsAmount,
         tds_deducted: applyTds,
         final_payable_amount: finalPayable,
+        rejection_note: null,
       })
       toast.success('Cleared for payment')
       onSuccess()
@@ -188,6 +189,17 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
         </div>
       ) : (
         <div className="space-y-4">
+          {invoiceHasStatus(inv, 'payer_rejected_audit') && (
+            <div className="rounded-r border border-amber/40 bg-amber/[0.08] px-4 py-3 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber">
+                Returned by payer — review remark
+              </p>
+              <p className="mt-2 leading-relaxed text-text">
+                <span className="font-semibold text-amber">Payer remark: </span>
+                {inv.rejection_note?.trim() || '—'}
+              </p>
+            </div>
+          )}
           <div className="rounded-r border border-border bg-bg-3/80 px-4 py-3 text-sm">
             <div className="flex justify-between gap-4 text-text-2">
               <span>Base amount</span>
@@ -285,55 +297,84 @@ function AuditorQueue({
               const gst = gstAmount(inv)
               const overdueFlag = isOverdue(inv.updated_at)
               const holdFlag = isHold(totalWithGst(inv))
+              const isPayerRejected = invoiceHasStatus(inv, 'payer_rejected_audit')
+              const payerRemark = inv.rejection_note?.trim() ?? ''
 
               return (
-                <tr
-                  key={inv.id}
-                  className="border-b border-border transition-colors hover:bg-bg-3/50"
-                >
-                  <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
-                  <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
-                  <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
-                  <td className="px-4 py-3 text-sm text-text">
-                    {fmtAmount(inv.amount)}
-                    {gst > 0 && (
-                      <span className="ml-1 text-xs text-text-3">
-                        +₹{gst.toLocaleString('en-IN')} GST
-                      </span>
+                <Fragment key={inv.id}>
+                  <tr
+                    className={cn(
+                      'border-b border-border transition-colors hover:bg-bg-3/50',
+                      isPayerRejected &&
+                        'border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50% hover:from-amber/[0.11]'
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-text-2 font-mono">
-                    <div className="max-w-[14rem] break-all">{inv.account_no}</div>
-                    <div className="mt-0.5 text-xs text-text-3">{inv.ifsc}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {overdueFlag && (
-                        <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
-                          Overdue
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
+                    <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
+                    <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
+                    <td className="px-4 py-3 text-sm text-text">
+                      {fmtAmount(inv.amount)}
+                      {gst > 0 && (
+                        <span className="ml-1 text-xs text-text-3">
+                          +₹{gst.toLocaleString('en-IN')} GST
                         </span>
                       )}
-                      {holdFlag && (
-                        <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
-                          24h hold
-                        </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-2 font-mono">
+                      <div className="max-w-[14rem] break-all">{inv.account_no}</div>
+                      <div className="mt-0.5 text-xs text-text-3">{inv.ifsc}</div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isPayerRejected && (
+                          <span className="inline-flex items-center rounded-full border border-amber/35 bg-amber/10 px-2 py-0.5 text-[11px] font-medium text-amber">
+                            Payer return
+                          </span>
+                        )}
+                        {overdueFlag && (
+                          <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
+                            Overdue
+                          </span>
+                        )}
+                        {holdFlag && (
+                          <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
+                            24h hold
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
+                        <button
+                          type="button"
+                          onClick={() => setAuditInvoice(inv)}
+                          className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
+                        >
+                          Audit
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isPayerRejected && (
+                    <tr
+                      className={cn(
+                        'border-b border-border border-l-2 border-l-amber/55 bg-red/[0.05]',
+                        'hover:bg-red/[0.07]'
                       )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
-                      <button
-                        type="button"
-                        onClick={() => setAuditInvoice(inv)}
-                        className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
-                      >
-                        Audit
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    >
+                      <td colSpan={8} className="px-4 py-3 pl-5">
+                        <p className="text-sm leading-relaxed text-text">
+                          <span className="font-semibold text-amber">Payer remark: </span>
+                          <span className="text-text">
+                            {payerRemark.length > 0 ? payerRemark : '—'}
+                          </span>
+                        </p>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               )
             })}
           </tbody>
