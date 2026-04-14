@@ -125,11 +125,14 @@ export function InvoiceQueue() {
   async function handleFixResubmitAccountsSubmit(invoiceId: string, amount: number) {
     try {
       await persistInvoiceUpdate(invoiceId, {
-        status: 'audit_cleared',
+        status: 'im_approved',
         amount,
         rejection_note: null,
+        final_payable_amount: null,
+        tds_amount: null,
+        tds_deducted: false,
       })
-      toast.success('Base amount updated — sent back to Accounts (audit cleared)')
+      toast.success('Base amount updated — returned to AP Auditor queue')
       setFixResubmitInvoice(null)
       fetchInvoices()
     } catch (err: unknown) {

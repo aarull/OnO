@@ -4,7 +4,7 @@ import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 import { Modal } from '../shared/Modal'
 import { api } from '../../lib/api'
-import { invoiceHasStatus } from '../../lib/invoiceStatus'
+import { invoiceHasStatus, normalizeInvoiceStatus } from '../../lib/invoiceStatus'
 import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
 import { cn, fmtAmount, timeAgo } from '../../lib/utils'
@@ -33,6 +33,12 @@ function roundMoney(n: number): number {
 
 /** Poll interval when Supabase Realtime is not configured */
 const POLL_MS = 45_000
+/** Faster refresh on Final Payer tab so newly audit-cleared invoices appear quickly */
+const PAYER_POLL_MS = 12_000
+
+function isAuditClearedInvoice(inv: { status: string }): boolean {
+  return normalizeInvoiceStatus(inv.status) === 'audit_cleared'
+}
 
 async function persistInvoiceUpdate(invoiceId: string, fields: Record<string, unknown>): Promise<void> {
   const client = supabase
@@ -401,7 +407,7 @@ function PayerQueue({
   onProcess: (invoice: Invoice) => void
 }) {
   const queue = useMemo(
-    () => invoices.filter((i) => invoiceHasStatus(i, 'audit_cleared')),
+    () => invoices.filter((i) => isAuditClearedInvoice(i)),
     [invoices]
   )
 
@@ -549,22 +555,35 @@ export function PaymentQueue() {
       }
     }
 
+    return () => {
+      cancelled = true
+    }
+  }, [fetchInvoices])
+
+  useEffect(() => {
+    let cancelled = false
+    const pollMs = activeRole === 'payer' ? PAYER_POLL_MS : POLL_MS
     const pollId = window.setInterval(() => {
       if (!cancelled) void fetchInvoices(true)
-    }, POLL_MS)
-
+    }, pollMs)
     return () => {
       cancelled = true
       window.clearInterval(pollId)
     }
-  }, [fetchInvoices])
+  }, [fetchInvoices, activeRole])
+
+  useEffect(() => {
+    if (activeRole === 'payer') {
+      void fetchInvoices(true)
+    }
+  }, [activeRole, fetchInvoices])
 
   const auditorPending = useMemo(
     () => invoices.filter((i) => invoiceHasStatus(i, 'im_approved')),
     [invoices]
   )
   const payerPending = useMemo(
-    () => invoices.filter((i) => invoiceHasStatus(i, 'audit_cleared')),
+    () => invoices.filter((i) => isAuditClearedInvoice(i)),
     [invoices]
   )
   const released = useMemo(

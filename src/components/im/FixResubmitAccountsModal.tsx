@@ -57,7 +57,7 @@ export function FixResubmitAccountsModal({
       open={open}
       onClose={handleClose}
       title="Fix base amount"
-      subtitle={`${invoice.id} · ${invoice.creator_name} — base amount only.`}
+      subtitle={`${invoice.id} · ${invoice.creator_name} — after save, the invoice returns to IM approved so AP Audit can re-verify TDS on the new amount.`}
       footer={
         <>
           <Button variant="outline" size="sm" disabled={submitting} onClick={handleClose}>
@@ -76,7 +76,8 @@ export function FixResubmitAccountsModal({
     >
       <div className="space-y-4">
         <div className="rounded-r border border-amber/35 bg-amber/[0.07] px-3 py-2 text-xs text-text-2">
-          Bank details cannot be edited here. If banking is wrong, use{' '}
+          Only the base amount changes here. Prior audit totals are cleared so AP Audit can
+          re-apply TDS on the new amount. If banking is wrong, use{' '}
           <span className="font-medium text-amber">Reject to creator</span> instead.
         </div>
 
