@@ -80,10 +80,16 @@ export function InvoiceDetail({
   const hasFinalPayable =
     invoice.final_payable_amount != null &&
     !Number.isNaN(Number(invoice.final_payable_amount))
-  const totalPayable = hasFinalPayable
+  const finalPaymentAmount = hasFinalPayable
     ? Number(invoice.final_payable_amount)
     : subtotalBeforeTds
   const tdsDisplay = Math.abs(Number(invoice.tds_amount ?? 0))
+  const gstNumberDisplay =
+    invoice.gst_number?.trim() ? invoice.gst_number.trim() : 'N/A'
+  const accountHolderDisplay =
+    invoice.account_holder_name?.trim() ? invoice.account_holder_name.trim() : 'N/A'
+  const panNumberRaw =
+    invoice.pan_number?.trim() || invoice.creator?.pan_number?.trim() || ''
 
   return (
     <>
@@ -149,101 +155,67 @@ export function InvoiceDetail({
 
       {/* Detail grid */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {/* Invoice details */}
+        {/* Financial breakdown */}
         <div className="rounded-r-2 border border-border bg-bg-2 p-5">
           <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
-            Invoice Details
+            Financial Breakdown
           </p>
           <dl className="space-y-3">
-            {(invoice.pan || invoice.gst_number) && (
-              <>
-                {invoice.pan ? (
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-text-2">PAN</dt>
-                    <dd className="text-sm font-medium text-text font-mono">
-                      {invoice.pan}
-                    </dd>
-                  </div>
-                ) : null}
-                {invoice.gst_number ? (
-                  <div className="flex justify-between">
-                    <dt className="text-sm text-text-2">GST Number</dt>
-                    <dd className="text-sm font-medium text-text font-mono">
-                      {invoice.gst_number}
-                    </dd>
-                  </div>
-                ) : null}
-              </>
-            )}
             <div className="flex justify-between">
               <dt className="text-sm text-text-2">Base Amount</dt>
               <dd className="text-sm font-medium text-text">
                 {fmtAmount(invoice.amount)}
               </dd>
             </div>
-            {invoice.gst && (
-              <div className="flex justify-between">
-                <dt className="text-sm text-text-2">GST (18%)</dt>
-                <dd className="text-sm font-medium text-text">
-                  {fmtAmount(gstAmount)}
-                </dd>
-              </div>
-            )}
             {invoice.tds_deducted === true && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">TDS (1%)</dt>
-                <dd className="text-sm font-medium text-amber">
+                <dd className="text-sm font-medium text-red">
                   −{fmtAmount(tdsDisplay)}
                 </dd>
               </div>
             )}
-            <div className="flex justify-between border-t border-border pt-3">
-              <dt className="text-sm font-medium text-text">Total Payable</dt>
-              <dd className="text-sm font-semibold text-accent-2">
-                {fmtAmount(totalPayable)}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">Assigned IM</dt>
-              <dd className="text-sm font-medium text-text">
-                {invoice.assigned_im}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">Submitted</dt>
-              <dd className="text-sm text-text">
-                {fmtDate(invoice.created_at)}
+            <div className="flex justify-between border-t border-border pt-4">
+              <dt className="text-sm font-semibold uppercase tracking-wide text-text">
+                Final Payment
+              </dt>
+              <dd className="font-serif text-lg font-semibold leading-none text-accent-2">
+                {fmtAmount(finalPaymentAmount)}
               </dd>
             </div>
           </dl>
         </div>
 
-        {/* Bank details */}
+        {/* Creator & bank */}
         <div className="rounded-r-2 border border-border bg-bg-2 p-5">
           <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
-            Bank Details
+            Creator &amp; Bank Details
           </p>
           <dl className="space-y-3">
-            {invoice.account_holder_name ? (
-              <div className="flex justify-between">
-                <dt className="text-sm text-text-2">Account Holder</dt>
-                <dd className="text-sm font-medium text-text">
-                  {invoice.account_holder_name}
-                </dd>
-              </div>
-            ) : null}
             <div className="flex justify-between">
-              <dt className="text-sm text-text-2">Account No</dt>
+              <dt className="text-sm text-text-2">Account Holder</dt>
+              <dd className="text-sm font-medium text-text">{accountHolderDisplay}</dd>
+            </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-text-2">Account Number</dt>
               <dd className="text-sm font-medium text-text font-mono">
                 {invoice.account_no}
               </dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-sm text-text-2">IFSC</dt>
-              <dd className="text-sm font-medium text-text font-mono">
-                {invoice.ifsc}
-              </dd>
+              <dt className="text-sm text-text-2">IFSC Code</dt>
+              <dd className="text-sm font-medium text-text font-mono">{invoice.ifsc}</dd>
             </div>
+            <div className="flex justify-between">
+              <dt className="text-sm text-text-2">GST Number</dt>
+              <dd className="text-sm font-medium text-text font-mono">{gstNumberDisplay}</dd>
+            </div>
+            {panNumberRaw ? (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">PAN Number</dt>
+                <dd className="text-sm font-medium text-text font-mono">{panNumberRaw}</dd>
+              </div>
+            ) : null}
           </dl>
         </div>
       </div>

@@ -18,15 +18,23 @@ export interface Profile {
   created_at: string
 }
 
+export interface InvoiceCreatorRef {
+  pan_number?: string | null
+}
+
 export interface Invoice {
   id: string
   creator_id: string
   creator_name: string
+  /** When API embeds creator identity (e.g. pan_number) */
+  creator?: InvoiceCreatorRef
   campaign: string
   amount: number
   gst: boolean
   account_holder_name?: string
   pan?: string
+  /** When present from API, shown in invoice detail identity card (preferred over legacy `pan`) */
+  pan_number?: string | null
   gst_number?: string
   account_no: string
   ifsc: string
