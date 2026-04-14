@@ -247,10 +247,7 @@ export function InvoiceQueue() {
                       <td className="px-4 py-3 text-text">{inv.creator_name}</td>
                       <td className="px-4 py-3 text-text-2">{inv.campaign}</td>
                       <td className="px-4 py-3 text-text">
-                        {fmtAmount(inv.amount)}
-                        {inv.gst && (
-                          <span className="ml-1 text-[11px] text-text-3">+GST</span>
-                        )}
+                        {fmtAmount(Number(inv.amount))}
                       </td>
                       <td className="max-w-md px-4 py-3">
                         <div className="rounded-r border border-red/20 bg-red-bg/40 px-3 py-2 text-sm leading-relaxed text-red">

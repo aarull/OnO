@@ -106,8 +106,7 @@ export function InvoiceList() {
       label: 'Amount',
       render: (row: Invoice) => (
         <span>
-          {fmtAmount(row.amount)}
-          {row.gst && <span className="ml-1 text-[11px] text-text-3">+GST</span>}
+          {fmtAmount(Number(row.amount))}
         </span>
       ),
     },

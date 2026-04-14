@@ -7,7 +7,7 @@ import { api } from '../../lib/api'
 import { invoiceHasStatus, normalizeInvoiceStatus } from '../../lib/invoiceStatus'
 import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
-import { cn, fmtAmount, timeAgo } from '../../lib/utils'
+import { cn, fmtAmount, roundMoney, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { EmptyState } from '../shared/EmptyState'
 import { ProcessModal } from './ProcessModal'
@@ -20,15 +20,15 @@ const isOverdue = (updatedAt: string) => {
 const isHold = (amount: number) => amount > 50000
 
 function gstAmount(invoice: Invoice): number {
-  return invoice.gst ? invoice.amount * 0.18 : 0
+  const base = Number(invoice.amount)
+  if (!Number.isFinite(base)) return 0
+  return invoice.gst ? roundMoney(base * 0.18) : 0
 }
 
 function totalWithGst(invoice: Invoice): number {
-  return invoice.amount + gstAmount(invoice)
-}
-
-function roundMoney(n: number): number {
-  return Math.round(n * 100) / 100
+  const base = Number(invoice.amount)
+  if (!Number.isFinite(base)) return gstAmount(invoice)
+  return roundMoney(base + gstAmount(invoice))
 }
 
 /** Poll interval when Supabase Realtime is not configured */
@@ -211,16 +211,16 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
               <span>Base amount</span>
               <span className="font-medium text-text">{fmtAmount(base)}</span>
             </div>
-            <div className="mt-2 flex justify-between gap-4 text-text-2">
-              <span>GST {inv.gst ? '(18%)' : ''}</span>
-              <span className="font-medium text-text">
-                {gst > 0 ? fmtAmount(gst) : '—'}
-              </span>
-            </div>
+            {gst > 0 && (
+              <div className="mt-2 flex justify-between gap-4 text-text-2">
+                <span>GST (18%)</span>
+                <span className="font-medium text-text-2">+{fmtAmount(gst)}</span>
+              </div>
+            )}
             {applyTds && (
               <div className="mt-2 flex justify-between gap-4 text-text-2">
                 <span>TDS (1% of base)</span>
-                <span className="font-medium text-amber">−{fmtAmount(tdsAmount)}</span>
+                <span className="font-medium text-red">−{fmtAmount(tdsAmount)}</span>
               </div>
             )}
             <div className="mt-3 border-t border-border pt-3 flex justify-between gap-4">
@@ -300,6 +300,8 @@ function AuditorQueue({
           </thead>
           <tbody>
             {queue.map((inv) => {
+              const base = Number(inv.amount)
+              const baseSafe = Number.isFinite(base) ? base : 0
               const gst = gstAmount(inv)
               const overdueFlag = isOverdue(inv.updated_at)
               const holdFlag = isHold(totalWithGst(inv))
@@ -319,10 +321,10 @@ function AuditorQueue({
                     <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
                     <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
                     <td className="px-4 py-3 text-sm text-text">
-                      {fmtAmount(inv.amount)}
+                      <span>{fmtAmount(baseSafe)}</span>
                       {gst > 0 && (
-                        <span className="ml-1 text-xs text-text-3">
-                          +₹{gst.toLocaleString('en-IN')} GST
+                        <span className="ml-1 block text-[11px] text-text-2">
+                          GST (18%): +{fmtAmount(gst)}
                         </span>
                       )}
                     </td>
@@ -434,10 +436,16 @@ function PayerQueue({
         </thead>
         <tbody>
           {queue.map((inv) => {
+            const base = Number(inv.amount)
+            const baseSafe = Number.isFinite(base) ? base : 0
             const gst = gstAmount(inv)
+            const tds = Number(inv.tds_amount)
+            const tdsSafe =
+              inv.tds_amount != null && Number.isFinite(tds) && tds > 0 ? roundMoney(tds) : 0
+            const computedFinal = roundMoney(roundMoney(baseSafe + gst) - tdsSafe)
             const hasFinal =
               inv.final_payable_amount != null && !Number.isNaN(Number(inv.final_payable_amount))
-            const payableTotal = hasFinal ? Number(inv.final_payable_amount) : totalWithGst(inv)
+            const payableTotal = hasFinal ? Number(inv.final_payable_amount) : computedFinal
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(payableTotal)
 
@@ -458,14 +466,15 @@ function PayerQueue({
                       <span className="ml-1 block text-[11px] text-text-3">Final payable</span>
                     </span>
                   ) : (
-                    <>
-                      {fmtAmount(inv.amount)}
-                      {gst > 0 && (
-                        <span className="ml-1 text-xs text-text-3">
-                          +₹{gst.toLocaleString('en-IN')} GST
-                        </span>
-                      )}
-                    </>
+                    <span>
+                      <span className="font-medium text-accent-2">{fmtAmount(computedFinal)}</span>
+                      <span className="ml-1 block text-[11px] text-text-3">Final payable</span>
+                      <span className="mt-0.5 block text-[11px] text-text-2">
+                        Base: {fmtAmount(baseSafe)}
+                        {gst > 0 ? ` · GST (18%): +${fmtAmount(gst)}` : ''}
+                        {tdsSafe > 0 ? ` · TDS: −${fmtAmount(tdsSafe)}` : ''}
+                      </span>
+                    </span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm text-text-2 font-mono">

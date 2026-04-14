@@ -71,10 +71,7 @@ export function InvoiceCard({
 
       {/* Amount */}
       <p className="mb-4 text-lg font-semibold text-text">
-        {fmtAmount(invoice.amount)}
-        {invoice.gst && (
-          <span className="ml-2 text-xs font-normal text-text-3">+18% GST</span>
-        )}
+        {fmtAmount(Number(invoice.amount))}
       </p>
 
       {/* Same block as AuditorQueue second <tr> (payer remark row) */}

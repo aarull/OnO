@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
 import type { Invoice, AuditEntry } from '../../lib/types'
-import { fmtAmount, timeAgo, cn } from '../../lib/utils'
+import { fmtAmount, roundMoney, timeAgo, cn } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceTable } from '../shared/InvoiceTable'
@@ -59,7 +59,7 @@ export function AgencyView() {
   )
   const payoutLiability = invoices
     .filter((i) => i.status !== 'released' && i.status !== 'rejected')
-    .reduce((sum, i) => sum + i.amount + (i.gst ? i.amount * 0.18 : 0), 0)
+    .reduce((sum, i) => sum + roundMoney(Number(i.amount) + (i.gst ? Number(i.amount) * 0.18 : 0)), 0)
 
   // IM workload
   const imCounts: Record<string, number> = {}

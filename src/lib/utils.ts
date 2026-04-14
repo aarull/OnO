@@ -15,16 +15,22 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase()
 }
 
+/** Rupees rounded to paise (2 decimal places) for money math */
+export function roundMoney(n: number): number {
+  const x = Number(n)
+  if (!Number.isFinite(x)) return 0
+  return Math.round(x * 100) / 100
+}
+
 export function fmtAmount(n: number): string {
-  if (n >= 100000) {
-    const lakhs = n / 100000
-    return `₹${lakhs % 1 === 0 ? lakhs.toFixed(0) : lakhs.toFixed(1)}L`
-  }
-  if (n >= 1000) {
-    const thousands = n / 1000
-    return `₹${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}K`
-  }
-  return `₹${n.toLocaleString('en-IN')}`
+  const x = Number(n)
+  if (!Number.isFinite(x)) return '₹—'
+  return x.toLocaleString('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 export function fmtDate(iso: string): string {

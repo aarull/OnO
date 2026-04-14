@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
 import type { Invoice, AuditEntry } from '../../lib/types'
-import { fmtAmount, fmtDate } from '../../lib/utils'
+import { fmtAmount, fmtDate, roundMoney } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
 import { StatusTracker } from '../shared/StatusTracker'
 import { handleWhatsAppReminder } from '../../lib/imWhatsAppReminder'
@@ -75,17 +75,18 @@ export function InvoiceDetail({
     )
   }
 
-  const gstAmount = invoice.gst ? invoice.amount * 0.18 : 0
-  const subtotalBeforeTds = invoice.amount + gstAmount
-  const hasFinalPayable =
-    invoice.final_payable_amount != null &&
-    !Number.isNaN(Number(invoice.final_payable_amount))
-  const finalPaymentAmount = hasFinalPayable
-    ? Number(invoice.final_payable_amount)
-    : subtotalBeforeTds
-  const tdsAmountNum = Number(invoice.tds_amount)
-  const showTdsRow =
-    invoice.tds_amount != null && !Number.isNaN(tdsAmountNum) && tdsAmountNum > 0
+  const baseAmount = Number(invoice.amount)
+  const baseSafe = Number.isFinite(baseAmount) ? baseAmount : 0
+  const gstAmount = invoice.gst ? roundMoney(baseSafe * 0.18) : 0
+  const preTdsTotal = roundMoney(baseSafe + gstAmount)
+  const tdsRaw = Number(invoice.tds_amount)
+  const tdsAmountNum =
+    invoice.tds_amount != null && Number.isFinite(tdsRaw) && tdsRaw > 0
+      ? roundMoney(Math.abs(tdsRaw))
+      : 0
+  const showTdsRow = tdsAmountNum > 0
+  /** Final = (Base + GST if applicable) − TDS; numeric coercion avoids string concat bugs */
+  const finalPaymentAmount = roundMoney(preTdsTotal - tdsAmountNum)
   const accountHolderDisplay =
     invoice.account_holder_name?.trim() ? invoice.account_holder_name.trim() : 'N/A'
   const gstNumberResolved =
@@ -168,16 +169,18 @@ export function InvoiceDetail({
           <dl className="space-y-3">
             <div className="flex justify-between">
               <dt className="text-sm text-text-2">Base Amount</dt>
-              <dd className="text-sm font-medium text-text">
-                {fmtAmount(invoice.amount)}
-              </dd>
+              <dd className="text-sm font-medium text-text">{fmtAmount(baseSafe)}</dd>
             </div>
+            {gstAmount > 0 && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">GST (18%)</dt>
+                <dd className="text-sm font-medium text-text-2">+{fmtAmount(gstAmount)}</dd>
+              </div>
+            )}
             {showTdsRow && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">TDS (1%)</dt>
-                <dd className="text-sm font-medium text-amber">
-                  −{fmtAmount(tdsAmountNum)}
-                </dd>
+                <dd className="text-sm font-medium text-red">−{fmtAmount(tdsAmountNum)}</dd>
               </div>
             )}
             <div className="flex justify-between border-t border-border pt-4">
