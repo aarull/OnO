@@ -32,9 +32,9 @@ function totalWithGst(invoice: Invoice): number {
 }
 
 /** Poll interval when Supabase Realtime is not configured */
-const POLL_MS = 45_000
+const POLL_MS = 10_000
 /** Faster refresh on Final Payer tab so newly audit-cleared invoices appear quickly */
-const PAYER_POLL_MS = 12_000
+const PAYER_POLL_MS = 10_000
 
 function isAuditClearedInvoice(inv: { status: string }): boolean {
   return normalizeInvoiceStatus(inv.status) === 'audit_cleared'
@@ -587,6 +587,18 @@ export function PaymentQueue() {
       void fetchInvoices(true)
     }
   }, [activeRole, fetchInvoices])
+
+  useEffect(() => {
+    function handleFocus() {
+      void fetchInvoices(true)
+    }
+    window.addEventListener('focus', handleFocus)
+    document.addEventListener('visibilitychange', handleFocus)
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleFocus)
+    }
+  }, [fetchInvoices])
 
   const auditorPending = useMemo(
     () => invoices.filter((i) => invoiceHasStatus(i, 'im_approved')),
