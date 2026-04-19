@@ -5,11 +5,23 @@ export type InvoiceStatus =
   | 'im_review'
   | 'im_approved'
   | 'audit_cleared'
+  | 'partially_paid'
   | 'audit_rejected'
   | 'payer_rejected_audit'
   | 'payer_rejected_im'
   | 'released'
   | 'rejected'
+
+export interface PaymentHistoryEntry {
+  /** ISO date/time string of the payment event */
+  created_at: string
+  /** Amount released/paid in this event */
+  amount: number
+  /** Reason category selected by payer */
+  reason: string
+  /** Optional note to creator */
+  note?: string | null
+}
 
 export interface Profile {
   id: string
@@ -55,6 +67,10 @@ export interface Invoice {
   tds_deducted?: boolean | null
   /** Base + GST − TDS after audit */
   final_payable_amount?: number | null
+  /** Total amount already released/paid against this invoice (for partial releases) */
+  amount_paid?: number | null
+  /** Payment releases / partial release notes from Final Payer */
+  payment_history?: PaymentHistoryEntry[] | null
   created_at: string
   updated_at: string
 }

@@ -28,6 +28,18 @@ export function InvoiceCard({
   const isAuditRejected = invoiceHasStatus(invoice, 'audit_rejected')
   const rejectionRemark = invoice.rejection_note?.trim() ?? ''
 
+  const finalPayable = Number(invoice.final_payable_amount ?? 0)
+  const amountPaid = Number(invoice.amount_paid ?? 0)
+  const hasPaymentProgress =
+    invoiceHasStatus(invoice, 'partially_paid') || (Number.isFinite(amountPaid) && amountPaid > 0)
+  const progressPctRaw =
+    Number.isFinite(finalPayable) && finalPayable > 0 ? (amountPaid / finalPayable) * 100 : 0
+  const progressPct = Math.min(100, Math.max(0, Number.isFinite(progressPctRaw) ? progressPctRaw : 0))
+  const pendingBalance =
+    Number.isFinite(finalPayable) && finalPayable > 0 && Number.isFinite(amountPaid)
+      ? Math.max(0, finalPayable - amountPaid)
+      : 0
+
   return (
     <div
       className={cn(
@@ -81,9 +93,23 @@ export function InvoiceCard({
       <p className="mb-3 text-sm text-text-2">{invoice.campaign}</p>
 
       {/* Amount */}
-      <p className="mb-4 text-lg font-semibold text-text">
+      <p className={cn('text-lg font-semibold text-text', hasPaymentProgress ? 'mb-2' : 'mb-4')}>
         {fmtAmount(Number(invoice.amount))}
       </p>
+
+      {hasPaymentProgress && (
+        <div className="mb-4">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
+            <div
+              className="h-full rounded-full bg-accent-2 transition-[width] duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-text-3">
+            {fmtAmount(amountPaid)} Paid • {fmtAmount(pendingBalance)} Pending
+          </p>
+        </div>
+      )}
 
       {/* Same block as AuditorQueue second <tr> (payer remark row) */}
       {isPayerRejectedIm && (

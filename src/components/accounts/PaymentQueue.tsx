@@ -11,6 +11,7 @@ import { cn, fmtAmount, roundMoney, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { EmptyState } from '../shared/EmptyState'
 import { ProcessModal } from './ProcessModal'
+import { ReleasePaymentModal, type PaymentReason } from './ReleasePaymentModal'
 
 const isOverdue = (updatedAt: string) => {
   const diff = Date.now() - new Date(updatedAt).getTime()
@@ -37,7 +38,8 @@ const POLL_MS = 10_000
 const PAYER_POLL_MS = 10_000
 
 function isAuditClearedInvoice(inv: { status: string }): boolean {
-  return normalizeInvoiceStatus(inv.status) === 'audit_cleared'
+  const s = normalizeInvoiceStatus(inv.status)
+  return s === 'audit_cleared' || s === 'partially_paid'
 }
 
 async function persistInvoiceUpdate(invoiceId: string, fields: Record<string, unknown>): Promise<void> {
@@ -504,7 +506,7 @@ function PayerQueue({
                       onClick={() => onProcess(inv)}
                       className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
                     >
-                      Process
+                      Release Payment
                     </button>
                   </div>
                 </td>
@@ -523,6 +525,8 @@ export function PaymentQueue() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null)
+  const [releaseOpen, setReleaseOpen] = useState(false)
+  const [releaseInvoice, setReleaseInvoice] = useState<Invoice | null>(null)
   const [timelineInvoice, setTimelineInvoice] = useState<Invoice | null>(null)
 
   const fetchInvoices = useCallback(async (silent = false) => {
@@ -634,6 +638,11 @@ export function PaymentQueue() {
     setModalOpen(true)
   }
 
+  function handleRelease(invoice: Invoice) {
+    setReleaseInvoice(invoice)
+    setReleaseOpen(true)
+  }
+
   async function handleConfirm(note: string) {
     const toRelease = selectedInvoice
     if (!toRelease) return
@@ -648,6 +657,29 @@ export function PaymentQueue() {
       void fetchInvoices(true)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to process payment')
+    }
+  }
+
+  async function handlePartialRelease(args: {
+    invoice: Invoice
+    amountToRelease: number
+    paymentReason: PaymentReason
+    noteToCreator: string
+  }) {
+    const inv = args.invoice
+    try {
+      await api.post(`/invoices/${encodeURIComponent(inv.id)}/release`, {
+        amount_to_release: args.amountToRelease,
+        payment_reason: args.paymentReason,
+        note_to_creator: args.noteToCreator || undefined,
+      })
+      toast.success('Payment released successfully')
+      setReleaseOpen(false)
+      setReleaseInvoice(null)
+      void fetchInvoices(true)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to release payment')
+      throw err
     }
   }
 
@@ -770,7 +802,7 @@ export function PaymentQueue() {
         <PayerQueue
           invoices={invoices}
           onViewTimeline={setTimelineInvoice}
-          onProcess={handleProcess}
+          onProcess={handleRelease}
         />
       )}
 
@@ -784,6 +816,16 @@ export function PaymentQueue() {
         creatorName={selectedInvoice?.creator_name ?? ''}
         onConfirm={handleConfirm}
         onRejectPayout={handlePayerReject}
+      />
+
+      <ReleasePaymentModal
+        open={releaseOpen}
+        invoice={releaseInvoice}
+        onClose={() => {
+          setReleaseOpen(false)
+          setReleaseInvoice(null)
+        }}
+        onSubmit={handlePartialRelease}
       />
     </div>
   )

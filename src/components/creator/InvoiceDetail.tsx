@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
-import type { Invoice, AuditEntry } from '../../lib/types'
+import type { Invoice, AuditEntry, PaymentHistoryEntry } from '../../lib/types'
 import { fmtAmount, fmtDate, roundMoney } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
 import { StatusTracker } from '../shared/StatusTracker'
@@ -96,6 +96,12 @@ export function InvoiceDetail({
   const hasGstNumber = gstNumberResolved.length > 0
   const hasPanNumber = panNumberResolved.length > 0
   const showTaxIdFallback = !hasGstNumber && !hasPanNumber
+  const paymentHistory: PaymentHistoryEntry[] = Array.isArray(invoice.payment_history)
+    ? invoice.payment_history
+    : []
+  const paymentHistorySorted = [...paymentHistory].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  )
 
   return (
     <>
@@ -260,6 +266,39 @@ export function InvoiceDetail({
                 </div>
               </li>
             ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Payment updates (Final Payer notes / partial releases) */}
+      {paymentHistorySorted.length > 0 && (
+        <div className="mt-6 rounded-r-2 border border-border bg-bg-2 p-5">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
+            Payment Updates
+          </p>
+          <ul className="space-y-3">
+            {paymentHistorySorted.map((h, idx) => {
+              const note = (h.note ?? '').trim()
+              return (
+                <li key={`${h.created_at}-${idx}`} className="flex items-start gap-3">
+                  <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent/50" />
+                  <div className="w-full">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="text-sm text-text">
+                        <span className="font-medium text-accent-2">{fmtAmount(Number(h.amount))}</span>{' '}
+                        <span className="text-text-2">·</span>{' '}
+                        <span className="text-sm text-text">{h.reason || 'Payment update'}</span>
+                      </p>
+                      <p className="text-[11px] text-text-3">{fmtDate(h.created_at)}</p>
+                    </div>
+                    <p className="mt-1 text-xs text-text-3">
+                      <span className="font-medium text-text-2">Note: </span>
+                      <span className="text-text-3">{note.length > 0 ? note : '—'}</span>
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
