@@ -633,11 +633,6 @@ export function PaymentQueue() {
     [pendingForRole]
   )
 
-  function handleProcess(invoice: Invoice) {
-    setSelectedInvoice(invoice)
-    setModalOpen(true)
-  }
-
   function handleRelease(invoice: Invoice) {
     setReleaseInvoice(invoice)
     setReleaseOpen(true)
