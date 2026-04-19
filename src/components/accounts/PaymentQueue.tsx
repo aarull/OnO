@@ -664,7 +664,7 @@ export function PaymentQueue() {
     const inv = args.invoice
     try {
       await api.post(`/invoices/${encodeURIComponent(inv.id)}/release`, {
-        amount_to_release: args.amountToRelease,
+        amount_released: Number(args.amountToRelease),
         payment_reason: args.paymentReason,
         note_to_creator: args.noteToCreator || undefined,
       })
