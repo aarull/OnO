@@ -102,6 +102,16 @@ export function InvoiceDetail({
   const paymentHistorySorted = [...paymentHistory].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
+  const amountPaidNum = Number(invoice.amount_paid ?? 0)
+  const finalPayableNum = Number(invoice.final_payable_amount ?? finalPaymentAmount ?? 0)
+  const hasPartialPayments =
+    Number.isFinite(amountPaidNum) && amountPaidNum > 0 && Number.isFinite(finalPayableNum) && finalPayableNum > 0
+  const paidPercent = hasPartialPayments
+    ? Math.min(100, Math.max(0, Math.round((amountPaidNum / finalPayableNum) * 100)))
+    : 0
+  const pendingBalanceNum = hasPartialPayments ? Math.max(0, roundMoney(finalPayableNum - amountPaidNum)) : 0
+  const mostRecentPayerNote =
+    paymentHistorySorted.find((h) => (h.note ?? '').trim().length > 0)?.note?.trim() ?? ''
 
   return (
     <>
@@ -197,6 +207,29 @@ export function InvoiceDetail({
                 {fmtAmount(finalPaymentAmount)}
               </dd>
             </div>
+            {hasPartialPayments && (
+              <div className="pt-2">
+                <div className="mt-2 h-1.5 w-full rounded-full bg-gray-800">
+                  <div
+                    className="h-1.5 rounded-full bg-indigo-500"
+                    style={{ width: `${paidPercent}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-text-3">
+                  ₹{Math.round(amountPaidNum).toLocaleString('en-IN')} Paid • ₹
+                  {Math.round(pendingBalanceNum).toLocaleString('en-IN')} Pending ({paidPercent}
+                  %)
+                </p>
+                {mostRecentPayerNote.length > 0 && (
+                  <div className="mt-3 rounded-r border border-border bg-gray-800/50 p-2">
+                    <div className="flex">
+                      <div className="mr-2 w-0.5 shrink-0 rounded-full bg-indigo-500" />
+                      <p className="text-sm text-gray-300">{mostRecentPayerNote}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </dl>
         </div>
 
@@ -279,6 +312,16 @@ export function InvoiceDetail({
           <ul className="space-y-3">
             {paymentHistorySorted.map((h, idx) => {
               const note = (h.note ?? '').trim()
+              const d = new Date(h.created_at)
+              const createdAtDisplay = Number.isFinite(d.getTime())
+                ? d.toLocaleString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
+                : '—'
               return (
                 <li key={`${h.created_at}-${idx}`} className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent/50" />
@@ -289,7 +332,7 @@ export function InvoiceDetail({
                         <span className="text-text-2">·</span>{' '}
                         <span className="text-sm text-text">{h.reason || 'Payment update'}</span>
                       </p>
-                      <p className="text-[11px] text-text-3">{fmtDate(h.created_at)}</p>
+                      <p className="text-[11px] text-text-3">{createdAtDisplay}</p>
                     </div>
                     <p className="mt-1 text-xs text-text-3">
                       <span className="font-medium text-text-2">Note: </span>
