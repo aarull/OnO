@@ -67,7 +67,9 @@ export interface Invoice {
   tds_amount?: number | null
   /** True when AP auditor applied 1% TDS on clear for payment */
   tds_deducted?: boolean | null
-  /** Agency commission % selected on submit (e.g. 0, 10, 20) */
+  /** Agency commission % (preferred API field) */
+  commission_rate?: number | null
+  /** Legacy / alternate field for commission % */
   commission_percentage?: number | null
   /** Rupee amount deducted for agency commission */
   commission_amount?: number | null

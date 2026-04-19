@@ -1,3 +1,4 @@
+import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { invoiceHasStatus } from '../../lib/invoiceStatus'
 import { fmtAmount, timeAgo, initials, avatarColor, cn } from '../../lib/utils'
@@ -92,10 +93,13 @@ export function InvoiceCard({
       {/* Campaign */}
       <p className="mb-3 text-sm text-text-2">{invoice.campaign}</p>
 
-      {/* Amount */}
-      <p className={cn('text-lg font-semibold text-text', hasPaymentProgress ? 'mb-2' : 'mb-4')}>
-        {fmtAmount(Number(invoice.amount))}
-      </p>
+      {/* Amount (adjusted net) */}
+      <div className={cn(hasPaymentProgress ? 'mb-2' : 'mb-4')}>
+        <p className="text-lg font-semibold text-accent-2">
+          {fmtAmount(adjustedNetFromInvoice(invoice))}
+        </p>
+        <p className="mt-0.5 text-[11px] leading-snug text-text-3">{amountColumnSubtext(invoice)}</p>
+      </div>
 
       {hasPaymentProgress && (
         <div className="mb-4">

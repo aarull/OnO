@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
+import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
 import type { Invoice, AuditEntry } from '../../lib/types'
-import { fmtAmount, roundMoney, timeAgo, cn } from '../../lib/utils'
+import { fmtAmount, timeAgo, cn } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoiceTable } from '../shared/InvoiceTable'
@@ -59,7 +60,7 @@ export function AgencyView() {
   )
   const payoutLiability = invoices
     .filter((i) => i.status !== 'released' && i.status !== 'rejected')
-    .reduce((sum, i) => sum + roundMoney(Number(i.amount) + (i.gst ? Number(i.amount) * 0.18 : 0)), 0)
+    .reduce((sum, i) => sum + adjustedNetFromInvoice(i), 0)
 
   // IM workload
   const imCounts: Record<string, number> = {}
@@ -84,7 +85,18 @@ export function AgencyView() {
     )},
     { key: 'creator_name', label: 'Creator' },
     { key: 'campaign', label: 'Campaign' },
-    { key: 'amount', label: 'Amount', render: (row: Invoice) => fmtAmount(row.amount) },
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (row: Invoice) => (
+        <span className="inline-block max-w-[14rem]">
+          <span className="font-medium text-accent-2">{fmtAmount(adjustedNetFromInvoice(row))}</span>
+          <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+            {amountColumnSubtext(row)}
+          </span>
+        </span>
+      ),
+    },
     { key: 'assigned_im', label: 'IM Member' },
     { key: 'status', label: 'Status', render: (row: Invoice) => <StatusBadge status={row.status} /> },
     { key: 'updated_at', label: 'Updated', render: (row: Invoice) => (

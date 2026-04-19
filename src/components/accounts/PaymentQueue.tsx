@@ -6,6 +6,11 @@ import { Modal } from '../shared/Modal'
 import { api } from '../../lib/api'
 import { invoiceHasStatus, normalizeInvoiceStatus } from '../../lib/invoiceStatus'
 import { supabase } from '../../lib/supabase'
+import {
+  adjustedNetFromInvoice,
+  amountColumnSubtext,
+  commissionRateFromInvoice,
+} from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { cn, fmtAmount, roundMoney, timeAgo } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
@@ -302,9 +307,6 @@ function AuditorQueue({
           </thead>
           <tbody>
             {queue.map((inv) => {
-              const base = Number(inv.amount)
-              const baseSafe = Number.isFinite(base) ? base : 0
-              const gst = gstAmount(inv)
               const overdueFlag = isOverdue(inv.updated_at)
               const holdFlag = isHold(totalWithGst(inv))
               const isPayerRejected = invoiceHasStatus(inv, 'payer_rejected_audit')
@@ -323,12 +325,12 @@ function AuditorQueue({
                     <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
                     <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
                     <td className="px-4 py-3 text-sm text-text">
-                      <span>{fmtAmount(baseSafe)}</span>
-                      {gst > 0 && (
-                        <span className="ml-1 block text-[11px] text-text-2">
-                          GST (18%): +{fmtAmount(gst)}
-                        </span>
-                      )}
+                      <span className="font-medium text-accent-2">
+                        {fmtAmount(adjustedNetFromInvoice(inv))}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                        {amountColumnSubtext(inv)}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-text-2 font-mono">
                       <div className="max-w-[14rem] break-all">{inv.account_no}</div>
@@ -401,32 +403,6 @@ function AuditorQueue({
   )
 }
 
-function payerCommissionDisplayPct(inv: Invoice, baseSafe: number) {
-  const commPctRaw = Number(inv.commission_percentage)
-  const commPctFromField =
-    Number.isFinite(commPctRaw) && commPctRaw > 0 ? Math.round(commPctRaw) : 0
-  const commFromApi = Number(inv.commission_amount)
-  const inferredCommPct =
-    commPctFromField === 0 &&
-    baseSafe > 0 &&
-    inv.commission_amount != null &&
-    Number.isFinite(commFromApi) &&
-    Math.abs(commFromApi) > 0
-      ? Math.max(1, Math.round((roundMoney(Math.abs(commFromApi)) / baseSafe) * 100))
-      : 0
-  return commPctFromField || inferredCommPct
-}
-
-function payerAmountBreakdownSubtext(inv: Invoice, baseSafe: number) {
-  const gstPct = inv.gst ? 18 : 0
-  const commPct = payerCommissionDisplayPct(inv, baseSafe)
-  return (
-    <span className="mt-0.5 block text-[11px] leading-snug text-text-3 tabular-nums">
-      {fmtAmount(baseSafe)} • {gstPct}% GST • {commPct}% Comm.
-    </span>
-  )
-}
-
 function payerManagedPayoutDot(hasCommission: boolean) {
   return (
     <span
@@ -495,8 +471,7 @@ function PayerQueue({
             const pending = roundMoney(payableTotal - amountPaidSafe)
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(payableTotal)
-            const displayCommPct = payerCommissionDisplayPct(inv, baseSafe)
-            const hasCommission = displayCommPct > 0
+            const hasCommission = commissionRateFromInvoice(inv) > 0
 
             return (
               <tr
@@ -520,7 +495,9 @@ function PayerQueue({
                         <span className="mt-0.5 block text-[11px] text-text-3">
                           Pending • {fmtAmount(amountPaidSafe)} already paid
                         </span>
-                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                          {amountColumnSubtext(inv)}
+                        </span>
                       </div>
                     </div>
                   ) : hasFinal ? (
@@ -528,17 +505,23 @@ function PayerQueue({
                       {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
                         <span className="font-medium text-accent-2">
-                          {fmtAmount(Number(inv.final_payable_amount))}
+                          {fmtAmount(adjustedNetFromInvoice(inv))}
                         </span>
-                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                          {amountColumnSubtext(inv)}
+                        </span>
                       </div>
                     </div>
                   ) : (
                     <div className="flex max-w-[16rem] gap-1.5">
                       {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
-                        <span className="font-medium text-accent-2">{fmtAmount(computedFinal)}</span>
-                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                        <span className="font-medium text-accent-2">
+                          {fmtAmount(adjustedNetFromInvoice(inv))}
+                        </span>
+                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                          {amountColumnSubtext(inv)}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -684,10 +667,10 @@ export function PaymentQueue() {
   const pendingForRole = activeRole === 'auditor' ? auditorPending : payerPending
   const totalLiability = useMemo(() => {
     if (activeRole === 'auditor') {
-      return auditorPending.reduce((sum, i) => sum + totalWithGst(i), 0)
+      return auditorPending.reduce((sum, i) => sum + adjustedNetFromInvoice(i), 0)
     }
     return payerPending.reduce(
-      (sum, i) => sum + (i.final_payable_amount ?? totalWithGst(i)),
+      (sum, i) => sum + (i.final_payable_amount ?? adjustedNetFromInvoice(i)),
       0
     )
   }, [activeRole, auditorPending, payerPending])

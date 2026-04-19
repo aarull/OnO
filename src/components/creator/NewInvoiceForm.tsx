@@ -247,6 +247,7 @@ export function NewInvoiceForm() {
           ifsc: ifsc.trim(),
           assigned_im: assignedIm,
           document_mode: 'auto',
+          commission_rate: commissionPercent,
           commission_percentage: commissionPercent,
           commission_amount: commissionAmount,
         })
@@ -257,6 +258,7 @@ export function NewInvoiceForm() {
         fd.append('gst', 'false')
         fd.append('assigned_im', assignedIm)
         fd.append('document_mode', 'upload')
+        fd.append('commission_rate', String(commissionPercent))
         fd.append('commission_percentage', String(commissionPercent))
         fd.append('commission_amount', String(commissionAmount))
         fd.append('invoice_pdf', pdfFile!)

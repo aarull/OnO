@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
+import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { fmtAmount, timeAgo } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
@@ -90,8 +91,11 @@ export function ApprovedList() {
                   <td className="px-5 py-4 font-mono text-xs text-accent-2">{inv.id}</td>
                   <td className="px-5 py-4 text-sm text-text">{inv.creator_name}</td>
                   <td className="px-5 py-4 text-sm text-text-2">{inv.campaign}</td>
-                  <td className="px-5 py-4 text-sm font-medium text-text">
-                    {fmtAmount(inv.amount)}
+                  <td className="px-5 py-4 text-sm text-text">
+                    <span className="font-medium text-accent-2">{fmtAmount(adjustedNetFromInvoice(inv))}</span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                      {amountColumnSubtext(inv)}
+                    </span>
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={inv.status} />
