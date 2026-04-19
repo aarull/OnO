@@ -13,6 +13,11 @@ interface InvoiceDetailProps {
   backPath?: string
   backLabel?: string
   showReminderToggle?: boolean
+  /**
+   * Creator-facing estimate: hide TDS in the breakdown and use (Base + GST) − commission
+   * for displayed totals. IM / accounts views should omit this (default false).
+   */
+  simplifiedCreatorPayout?: boolean
   /** When set (e.g. modal overlay), Back uses this instead of router navigation */
   onClose?: () => void
 }
@@ -22,6 +27,7 @@ export function InvoiceDetail({
   backPath = '/dashboard/creator',
   backLabel = 'Back to invoices',
   showReminderToggle = true,
+  simplifiedCreatorPayout = false,
   onClose,
 }: InvoiceDetailProps) {
   const navigate = useNavigate()
@@ -78,13 +84,16 @@ export function InvoiceDetail({
   const baseAmount = Number(invoice.amount)
   const baseSafe = Number.isFinite(baseAmount) ? baseAmount : 0
   const gstAmount = invoice.gst ? roundMoney(baseSafe * 0.18) : 0
-  const preTdsTotal = roundMoney(baseSafe + gstAmount)
+  const grossSubtotal = roundMoney(baseSafe + gstAmount)
   const tdsRaw = Number(invoice.tds_amount)
   const tdsAmountNum =
-    invoice.tds_amount != null && Number.isFinite(tdsRaw) && tdsRaw > 0
+    !simplifiedCreatorPayout &&
+    invoice.tds_amount != null &&
+    Number.isFinite(tdsRaw) &&
+    tdsRaw > 0
       ? roundMoney(Math.abs(tdsRaw))
       : 0
-  const showTdsRow = tdsAmountNum > 0
+  const showTdsRow = !simplifiedCreatorPayout && tdsAmountNum > 0
 
   const commissionPctRaw = Number(invoice.commission_percentage)
   const commissionPctFromApi =
@@ -106,11 +115,14 @@ export function InvoiceDetail({
         : 0
   const showCommissionRow = commissionAmountNum > 0
 
-  /** Net = (Base + GST) − TDS − commission (matches payout math incl. agency fee) */
-  const derivedNetPayable = roundMoney(preTdsTotal - tdsAmountNum - commissionAmountNum)
+  /** Full view: (Base + GST) − TDS − commission. Creator estimate: (Base + GST) − commission */
+  const derivedNetPayable = simplifiedCreatorPayout
+    ? roundMoney(grossSubtotal - commissionAmountNum)
+    : roundMoney(grossSubtotal - tdsAmountNum - commissionAmountNum)
   const apiFinalRaw = invoice.final_payable_amount
-  const payableTotal =
-    commissionAmountNum > 0
+  const payableTotal = simplifiedCreatorPayout
+    ? derivedNetPayable
+    : commissionAmountNum > 0
       ? derivedNetPayable
       : apiFinalRaw != null && Number.isFinite(Number(apiFinalRaw))
         ? roundMoney(Number(apiFinalRaw))
@@ -289,6 +301,11 @@ export function InvoiceDetail({
               </div>
             )}
           </dl>
+            {simplifiedCreatorPayout && (
+              <p className="mt-3 border-t border-border pt-3 text-[11px] leading-relaxed text-text-3">
+                Final amount may be subject to TDS deductions by accounts after review.
+              </p>
+            )}
         </div>
 
         {/* Creator & bank */}

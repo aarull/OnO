@@ -6,6 +6,8 @@ interface InvoiceDetailPanelProps {
   onClose: () => void
   backLabel?: string
   showReminderToggle?: boolean
+  /** When true, creator-style payout breakdown (no TDS line; Base + GST − commission). */
+  simplifiedCreatorPayout?: boolean
 }
 
 /** Slide-over timeline/detail for table “View” on auto-generated invoices */
@@ -15,6 +17,7 @@ export function InvoiceDetailPanel({
   onClose,
   backLabel = 'Back to list',
   showReminderToggle = false,
+  simplifiedCreatorPayout = false,
 }: InvoiceDetailPanelProps) {
   if (!open || !invoiceId) return null
 
@@ -35,6 +38,7 @@ export function InvoiceDetailPanel({
           onClose={onClose}
           backLabel={backLabel}
           showReminderToggle={showReminderToggle}
+          simplifiedCreatorPayout={simplifiedCreatorPayout}
         />
       </div>
     </div>

@@ -37,7 +37,7 @@ function AgencyCommissionPills({
     <div className="space-y-2">
       <p className="text-xs font-medium text-text-2">Agency Commission</p>
       <p className="text-[11px] leading-relaxed text-text-3">
-        Optional. Deducted from your estimated payout alongside TDS when applicable.
+        Optional. Deducted from your estimated payout before any accounts-side adjustments.
       </p>
       <div
         className="flex gap-1 rounded-full border border-border bg-bg-3/70 p-1 shadow-inner shadow-black/20"
@@ -183,20 +183,14 @@ export function NewInvoiceForm() {
     return roundMoney(baseAmount * 0.18)
   }, [docMode, gst, baseAmount])
 
-  /** Matches accounts preview: 1% of base when estimating payout */
-  const tdsAmount = useMemo(() => {
-    if (baseAmount <= 0) return 0
-    return roundMoney(baseAmount * 0.01)
-  }, [baseAmount])
-
   const commissionAmount = useMemo(
     () => roundMoney((baseAmount * commissionPercent) / 100),
     [baseAmount, commissionPercent]
   )
 
   const totalPayable = useMemo(
-    () => roundMoney(baseAmount + gstAmount - tdsAmount - commissionAmount),
-    [baseAmount, gstAmount, tdsAmount, commissionAmount]
+    () => roundMoney(baseAmount + gstAmount - commissionAmount),
+    [baseAmount, gstAmount, commissionAmount]
   )
 
   function clearPanGstError() {
@@ -462,10 +456,6 @@ export function NewInvoiceForm() {
                 <dd className="font-medium tabular-nums text-accent-2">+{fmtAmount(gstAmount)}</dd>
               </div>
             )}
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <dt className="text-text-2">TDS (1% of base)</dt>
-              <dd className="font-medium tabular-nums text-red">−{fmtAmount(tdsAmount)}</dd>
-            </div>
             {commissionAmount > 0 && (
               <div className="flex items-center justify-between gap-3 text-sm">
                 <dt className="text-text-2">Agency commission ({commissionPercent}%)</dt>
@@ -480,7 +470,7 @@ export function NewInvoiceForm() {
                 </dd>
               </div>
               <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
-                (Base + GST) − (TDS + commission). Final amount may be confirmed after accounts review.
+                Final amount may be subject to TDS deductions by accounts after review.
               </p>
             </div>
           </dl>

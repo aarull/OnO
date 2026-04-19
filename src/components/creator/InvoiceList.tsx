@@ -230,6 +230,7 @@ export function InvoiceList() {
         onClose={() => setSelectedInvoice(null)}
         backLabel="Back to invoices"
         showReminderToggle
+        simplifiedCreatorPayout
       />
 
       <CreatorFixInvoiceModal

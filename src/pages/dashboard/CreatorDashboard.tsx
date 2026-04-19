@@ -23,7 +23,7 @@ export default function CreatorDashboard() {
       return <NewInvoiceForm />
     }
     if (id) {
-      return <InvoiceDetail invoiceId={id} />
+      return <InvoiceDetail invoiceId={id} simplifiedCreatorPayout />
     }
     return <InvoiceList />
   }
