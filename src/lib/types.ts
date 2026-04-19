@@ -60,6 +60,8 @@ export interface Invoice {
   /** Present when creator uploaded a PDF; fetch with auth to open/download */
   invoice_file_url?: string
   status: InvoiceStatus
+  /** IM return / fix-request copy when API sends it separately from rejection_note */
+  im_remark?: string | null
   rejection_note: string
   /** Set when auditor clears for payment (1% of base when TDS applied) */
   tds_amount?: number | null

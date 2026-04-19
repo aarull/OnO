@@ -32,6 +32,12 @@ async function persistInvoiceUpdate(
   await api.patch('/invoices/' + invoiceId + '/status', fields)
 }
 
+function hasImReturnRemark(invoice: Invoice): boolean {
+  const fromImRemark = (invoice.im_remark ?? '').trim()
+  const fromRejection = (invoice.rejection_note ?? '').trim()
+  return fromImRemark.length > 0 || fromRejection.length > 0
+}
+
 function rejectedRowClass(row: Invoice): string | undefined {
   if (normalizeInvoiceStatus(row.status) !== 'rejected') return undefined
   return cn(
@@ -177,7 +183,7 @@ export function InvoiceList() {
 
           {/* Reserve width so rows don’t shift when Remind is hidden (released) */}
           <div className="ml-2 inline-flex min-w-[6.75rem] shrink-0 items-center justify-start">
-            {invoice.status !== 'released' && (
+            {invoice.status !== 'released' && !hasImReturnRemark(invoice) && (
               <button
                 type="button"
                 onClick={(e) => {
