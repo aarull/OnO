@@ -85,8 +85,36 @@ export function InvoiceDetail({
       ? roundMoney(Math.abs(tdsRaw))
       : 0
   const showTdsRow = tdsAmountNum > 0
-  /** Final = (Base + GST if applicable) − TDS; numeric coercion avoids string concat bugs */
-  const finalPaymentAmount = roundMoney(preTdsTotal - tdsAmountNum)
+
+  const commissionPctRaw = Number(invoice.commission_percentage)
+  const commissionPctFromApi =
+    Number.isFinite(commissionPctRaw) && commissionPctRaw > 0 ? Math.round(commissionPctRaw) : 0
+  const commissionFromApi = Number(invoice.commission_amount)
+  const commissionAmountNum =
+    invoice.commission_amount != null &&
+    Number.isFinite(commissionFromApi) &&
+    Math.abs(commissionFromApi) > 0
+      ? roundMoney(Math.abs(commissionFromApi))
+      : commissionPctFromApi > 0
+        ? roundMoney((baseSafe * commissionPctFromApi) / 100)
+        : 0
+  const displayCommissionPct =
+    commissionPctFromApi > 0
+      ? commissionPctFromApi
+      : baseSafe > 0 && commissionAmountNum > 0
+        ? Math.max(1, Math.round((commissionAmountNum / baseSafe) * 100))
+        : 0
+  const showCommissionRow = commissionAmountNum > 0
+
+  /** Net = (Base + GST) − TDS − commission (matches payout math incl. agency fee) */
+  const derivedNetPayable = roundMoney(preTdsTotal - tdsAmountNum - commissionAmountNum)
+  const apiFinalRaw = invoice.final_payable_amount
+  const payableTotal =
+    commissionAmountNum > 0
+      ? derivedNetPayable
+      : apiFinalRaw != null && Number.isFinite(Number(apiFinalRaw))
+        ? roundMoney(Number(apiFinalRaw))
+        : derivedNetPayable
   const accountHolderDisplay =
     invoice.account_holder_name?.trim() ? invoice.account_holder_name.trim() : 'N/A'
   const gstNumberResolved =
@@ -103,17 +131,19 @@ export function InvoiceDetail({
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
   const amountPaidNum = Number(invoice.amount_paid ?? 0)
-  const finalPayableNum = Number(invoice.final_payable_amount ?? finalPaymentAmount ?? 0)
   const hasPartialPayments =
-    Number.isFinite(amountPaidNum) && amountPaidNum > 0 && Number.isFinite(finalPayableNum) && finalPayableNum > 0
+    Number.isFinite(amountPaidNum) &&
+    amountPaidNum > 0 &&
+    Number.isFinite(payableTotal) &&
+    payableTotal > 0
   const paidPercent = hasPartialPayments
-    ? Math.min(100, Math.max(0, Math.round((amountPaidNum / finalPayableNum) * 100)))
+    ? Math.min(100, Math.max(0, Math.round((amountPaidNum / payableTotal) * 100)))
     : 0
-  const pendingBalanceNum = hasPartialPayments ? Math.max(0, roundMoney(finalPayableNum - amountPaidNum)) : 0
-  const pendingBalanceDisplay = Number.isFinite(finalPayableNum)
+  const pendingBalanceNum = hasPartialPayments ? Math.max(0, roundMoney(payableTotal - amountPaidNum)) : 0
+  const pendingBalanceDisplay = Number.isFinite(payableTotal)
     ? hasPartialPayments
       ? pendingBalanceNum
-      : finalPayableNum
+      : payableTotal
     : 0
   const mostRecentPayerNote =
     paymentHistorySorted.find((h) => (h.note ?? '').trim().length > 0)?.note?.trim() ?? ''
@@ -198,6 +228,14 @@ export function InvoiceDetail({
                 <dd className="text-sm font-medium text-text-2">+{fmtAmount(gstAmount)}</dd>
               </div>
             )}
+            {showCommissionRow && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-3">
+                  Agency Commission ({displayCommissionPct}%)
+                </dt>
+                <dd className="text-sm font-medium text-red">−{fmtAmount(commissionAmountNum)}</dd>
+              </div>
+            )}
             {showTdsRow && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">TDS (1%)</dt>
@@ -209,13 +247,13 @@ export function InvoiceDetail({
                 Total Invoice Value
               </dt>
               <dd className="font-serif text-lg font-semibold leading-none text-accent-2">
-                {fmtAmount(finalPayableNum)}
+                {fmtAmount(payableTotal)}
               </dd>
             </div>
             {hasPartialPayments && (
               <div className="flex justify-between">
                 <dt className="text-sm text-text-2">Amount Released</dt>
-                <dd className="text-sm font-medium text-red">-₹{Math.round(amountPaidNum).toLocaleString('en-IN')}</dd>
+                <dd className="text-sm font-medium text-red">−{fmtAmount(amountPaidNum)}</dd>
               </div>
             )}
 
@@ -224,7 +262,7 @@ export function InvoiceDetail({
                 Pending Balance
               </dt>
               <dd className="font-serif text-xl font-semibold leading-none text-accent-2">
-                ₹{Math.round(pendingBalanceDisplay).toLocaleString('en-IN')}
+                {fmtAmount(pendingBalanceDisplay)}
               </dd>
             </div>
 
@@ -237,8 +275,7 @@ export function InvoiceDetail({
                   />
                 </div>
                 <p className="mt-2 text-xs text-text-3">
-                  ₹{Math.round(amountPaidNum).toLocaleString('en-IN')} Paid • ₹
-                  {Math.round(pendingBalanceNum).toLocaleString('en-IN')} Pending ({paidPercent}
+                  {fmtAmount(amountPaidNum)} Paid • {fmtAmount(pendingBalanceNum)} Pending ({paidPercent}
                   %)
                 </p>
                 {mostRecentPayerNote.length > 0 && (

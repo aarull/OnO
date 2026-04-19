@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
-import { cn } from '../../lib/utils'
+import { cn, fmtAmount, roundMoney } from '../../lib/utils'
 import { PageHeader } from '../layout/PageHeader'
 import { FormInput } from '../shared/FormInput'
 import { FormSelect } from '../shared/FormSelect'
@@ -17,6 +17,56 @@ const IM_MEMBER_NAMES = [
 
 function isPdfFile(file: File) {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+}
+
+type CommissionPercent = 0 | 10 | 20
+
+function AgencyCommissionPills({
+  value,
+  onChange,
+}: {
+  value: CommissionPercent
+  onChange: (v: CommissionPercent) => void
+}) {
+  const options: { label: string; value: CommissionPercent }[] = [
+    { label: 'None', value: 0 },
+    { label: '10%', value: 10 },
+    { label: '20%', value: 20 },
+  ]
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-text-2">Agency Commission</p>
+      <p className="text-[11px] leading-relaxed text-text-3">
+        Optional. Deducted from your estimated payout alongside TDS when applicable.
+      </p>
+      <div
+        className="flex gap-1 rounded-full border border-border bg-bg-3/70 p-1 shadow-inner shadow-black/20"
+        role="radiogroup"
+        aria-label="Agency commission rate"
+      >
+        {options.map((opt) => {
+          const active = value === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onChange(opt.value)}
+              className={cn(
+                'min-w-0 flex-1 rounded-full px-3 py-2 text-center text-xs font-semibold tracking-wide transition-all duration-200',
+                active
+                  ? 'bg-indigo-600 text-white shadow-[0_0_18px_rgba(79,70,229,0.45)] ring-1 ring-indigo-400/40'
+                  : 'border border-border/70 bg-bg-2/40 text-text-2 hover:border-border hover:bg-bg-4/60 hover:text-text'
+              )}
+            >
+              {opt.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 interface PdfDropzoneProps {
@@ -113,6 +163,7 @@ export function NewInvoiceForm() {
   const [campaign, setCampaign] = useState('')
   const [amount, setAmount] = useState('')
   const [gst, setGst] = useState('yes')
+  const [commissionPercent, setCommissionPercent] = useState<CommissionPercent>(0)
   const [pan, setPan] = useState('')
   const [gstNumber, setGstNumber] = useState('')
   const [accountHolderName, setAccountHolderName] = useState('')
@@ -121,6 +172,32 @@ export function NewInvoiceForm() {
   const [assignedIm, setAssignedIm] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const baseAmount = useMemo(() => {
+    const n = Number(amount)
+    return Number.isFinite(n) && n > 0 ? n : 0
+  }, [amount])
+
+  const gstAmount = useMemo(() => {
+    if (docMode !== 'auto' || gst !== 'yes') return 0
+    return roundMoney(baseAmount * 0.18)
+  }, [docMode, gst, baseAmount])
+
+  /** Matches accounts preview: 1% of base when estimating payout */
+  const tdsAmount = useMemo(() => {
+    if (baseAmount <= 0) return 0
+    return roundMoney(baseAmount * 0.01)
+  }, [baseAmount])
+
+  const commissionAmount = useMemo(
+    () => roundMoney((baseAmount * commissionPercent) / 100),
+    [baseAmount, commissionPercent]
+  )
+
+  const totalPayable = useMemo(
+    () => roundMoney(baseAmount + gstAmount - tdsAmount - commissionAmount),
+    [baseAmount, gstAmount, tdsAmount, commissionAmount]
+  )
 
   function clearPanGstError() {
     setErrors((prev) => {
@@ -176,6 +253,8 @@ export function NewInvoiceForm() {
           ifsc: ifsc.trim(),
           assigned_im: assignedIm,
           document_mode: 'auto',
+          commission_percentage: commissionPercent,
+          commission_amount: commissionAmount,
         })
       } else {
         const fd = new FormData()
@@ -184,6 +263,8 @@ export function NewInvoiceForm() {
         fd.append('gst', 'false')
         fd.append('assigned_im', assignedIm)
         fd.append('document_mode', 'upload')
+        fd.append('commission_percentage', String(commissionPercent))
+        fd.append('commission_amount', String(commissionAmount))
         fd.append('invoice_pdf', pdfFile!)
         await api.postForm('/invoices', fd)
       }
@@ -241,42 +322,48 @@ export function NewInvoiceForm() {
         />
 
         {docMode === 'auto' ? (
-          <div className="space-y-1.5">
-            <div className="flex items-end gap-4">
-              <div className="flex-1">
-                <FormInput
-                  label="Amount (₹)"
-                  type="number"
-                  placeholder="50000"
-                  min="1"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  error={errors.amount}
-                />
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex items-end gap-4">
+                <div className="flex-1">
+                  <FormInput
+                    label="Amount (₹)"
+                    type="number"
+                    placeholder="50000"
+                    min="1"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    error={errors.amount}
+                  />
+                </div>
+                <div className="pb-0.5">
+                  <ToggleGroup
+                    options={[
+                      { label: 'Yes +18%', value: 'yes' },
+                      { label: 'No', value: 'no' },
+                    ]}
+                    value={gst}
+                    onChange={setGst}
+                  />
+                </div>
               </div>
-              <div className="pb-0.5">
-                <ToggleGroup
-                  options={[
-                    { label: 'Yes +18%', value: 'yes' },
-                    { label: 'No', value: 'no' },
-                  ]}
-                  value={gst}
-                  onChange={setGst}
-                />
-              </div>
+              <p className="text-[11px] text-text-3">GST applicable?</p>
             </div>
-            <p className="text-[11px] text-text-3">GST applicable?</p>
+            <AgencyCommissionPills value={commissionPercent} onChange={setCommissionPercent} />
           </div>
         ) : (
-          <FormInput
-            label="Amount (₹)"
-            type="number"
-            placeholder="50000"
-            min="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            error={errors.amount}
-          />
+          <div className="space-y-4">
+            <FormInput
+              label="Amount (₹)"
+              type="number"
+              placeholder="50000"
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              error={errors.amount}
+            />
+            <AgencyCommissionPills value={commissionPercent} onChange={setCommissionPercent} />
+          </div>
         )}
 
         {docMode === 'auto' && (
@@ -361,6 +448,43 @@ export function NewInvoiceForm() {
             error={errors.invoicePdf}
           />
         )}
+
+        <div className="rounded-r-2 border border-border bg-gradient-to-b from-bg-3/80 to-bg-3/30 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <p className="text-xs font-semibold uppercase tracking-widest text-text-3">Estimated payout</p>
+          <dl className="mt-3 space-y-2.5">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <dt className="text-text-2">Base</dt>
+              <dd className="font-medium tabular-nums text-text">{fmtAmount(baseAmount)}</dd>
+            </div>
+            {gstAmount > 0 && (
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <dt className="text-text-2">GST (18%)</dt>
+                <dd className="font-medium tabular-nums text-accent-2">+{fmtAmount(gstAmount)}</dd>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <dt className="text-text-2">TDS (1% of base)</dt>
+              <dd className="font-medium tabular-nums text-red">−{fmtAmount(tdsAmount)}</dd>
+            </div>
+            {commissionAmount > 0 && (
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <dt className="text-text-2">Agency commission ({commissionPercent}%)</dt>
+                <dd className="font-medium tabular-nums text-red">−{fmtAmount(commissionAmount)}</dd>
+              </div>
+            )}
+            <div className="border-t border-border pt-3">
+              <div className="flex items-end justify-between gap-3">
+                <dt className="text-sm font-semibold uppercase tracking-wide text-text">Total payable</dt>
+                <dd className="font-serif text-xl font-semibold tabular-nums tracking-tight text-accent-2">
+                  {fmtAmount(totalPayable)}
+                </dd>
+              </div>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
+                (Base + GST) − (TDS + commission). Final amount may be confirmed after accounts review.
+              </p>
+            </div>
+          </dl>
+        </div>
 
         <button
           type="submit"

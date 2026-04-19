@@ -401,6 +401,48 @@ function AuditorQueue({
   )
 }
 
+function payerCommissionDisplayPct(inv: Invoice, baseSafe: number) {
+  const commPctRaw = Number(inv.commission_percentage)
+  const commPctFromField =
+    Number.isFinite(commPctRaw) && commPctRaw > 0 ? Math.round(commPctRaw) : 0
+  const commFromApi = Number(inv.commission_amount)
+  const inferredCommPct =
+    commPctFromField === 0 &&
+    baseSafe > 0 &&
+    inv.commission_amount != null &&
+    Number.isFinite(commFromApi) &&
+    Math.abs(commFromApi) > 0
+      ? Math.max(1, Math.round((roundMoney(Math.abs(commFromApi)) / baseSafe) * 100))
+      : 0
+  return commPctFromField || inferredCommPct
+}
+
+function payerAmountBreakdownSubtext(inv: Invoice, baseSafe: number) {
+  const gstPct = inv.gst ? 18 : 0
+  const commPct = payerCommissionDisplayPct(inv, baseSafe)
+  return (
+    <span className="mt-0.5 block text-[11px] leading-snug text-text-3 tabular-nums">
+      {fmtAmount(baseSafe)} • {gstPct}% GST • {commPct}% Comm.
+    </span>
+  )
+}
+
+function payerManagedPayoutDot(hasCommission: boolean) {
+  return (
+    <span
+      className="inline-flex h-4 w-2 shrink-0 items-center justify-center"
+      aria-hidden
+      title={hasCommission ? 'Managed payout (agency commission)' : undefined}
+    >
+      {hasCommission ? (
+        <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 shadow-[0_0_10px_rgba(196,181,253,0.95)] ring-1 ring-white/25" />
+      ) : (
+        <span className="block h-1.5 w-1.5" />
+      )}
+    </span>
+  )
+}
+
 function PayerQueue({
   invoices,
   onViewTimeline,
@@ -453,6 +495,8 @@ function PayerQueue({
             const pending = roundMoney(payableTotal - amountPaidSafe)
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(payableTotal)
+            const displayCommPct = payerCommissionDisplayPct(inv, baseSafe)
+            const hasCommission = displayCommPct > 0
 
             return (
               <tr
@@ -464,34 +508,39 @@ function PayerQueue({
                 <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
                 <td className="px-4 py-3 text-sm text-text">
                   {amountPaidSafe > 0 ? (
-                    <span className="inline-block">
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium text-accent-2">{fmtAmount(pending)}</span>
-                        <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
-                          Partially Paid
+                    <div className="flex max-w-[16rem] gap-1.5">
+                      {payerManagedPayoutDot(hasCommission)}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-accent-2">{fmtAmount(pending)}</span>
+                          <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
+                            Partially Paid
+                          </span>
+                        </div>
+                        <span className="mt-0.5 block text-[11px] text-text-3">
+                          Pending • {fmtAmount(amountPaidSafe)} already paid
                         </span>
-                      </span>
-                      <span className="ml-1 block text-[11px] text-text-3">
-                        Pending • {fmtAmount(amountPaidSafe)} already paid
-                      </span>
-                    </span>
+                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                      </div>
+                    </div>
                   ) : hasFinal ? (
-                    <span>
-                      <span className="font-medium text-accent-2">
-                        {fmtAmount(Number(inv.final_payable_amount))}
-                      </span>
-                      <span className="ml-1 block text-[11px] text-text-3">Final payable</span>
-                    </span>
+                    <div className="flex max-w-[16rem] gap-1.5">
+                      {payerManagedPayoutDot(hasCommission)}
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium text-accent-2">
+                          {fmtAmount(Number(inv.final_payable_amount))}
+                        </span>
+                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                      </div>
+                    </div>
                   ) : (
-                    <span>
-                      <span className="font-medium text-accent-2">{fmtAmount(computedFinal)}</span>
-                      <span className="ml-1 block text-[11px] text-text-3">Final payable</span>
-                      <span className="mt-0.5 block text-[11px] text-text-2">
-                        Base: {fmtAmount(baseSafe)}
-                        {gst > 0 ? ` · GST (18%): +${fmtAmount(gst)}` : ''}
-                        {tdsSafe > 0 ? ` · TDS: −${fmtAmount(tdsSafe)}` : ''}
-                      </span>
-                    </span>
+                    <div className="flex max-w-[16rem] gap-1.5">
+                      {payerManagedPayoutDot(hasCommission)}
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium text-accent-2">{fmtAmount(computedFinal)}</span>
+                        {payerAmountBreakdownSubtext(inv, baseSafe)}
+                      </div>
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm text-text-2 font-mono">

@@ -67,6 +67,10 @@ export interface Invoice {
   tds_amount?: number | null
   /** True when AP auditor applied 1% TDS on clear for payment */
   tds_deducted?: boolean | null
+  /** Agency commission % selected on submit (e.g. 0, 10, 20) */
+  commission_percentage?: number | null
+  /** Rupee amount deducted for agency commission */
+  commission_amount?: number | null
   /** Base + GST − TDS after audit */
   final_payable_amount?: number | null
   /** Total amount already released/paid against this invoice (for partial releases) */
