@@ -465,12 +465,16 @@ function PayerQueue({
             const computedFinal = roundMoney(roundMoney(baseSafe + gst) - tdsSafe)
             const hasFinal =
               inv.final_payable_amount != null && !Number.isNaN(Number(inv.final_payable_amount))
-            const payableTotal = hasFinal ? Number(inv.final_payable_amount) : computedFinal
+            /** Total contract before releases — API `final_payable_amount` when set */
+            const contractTotalBeforePayments = hasFinal
+              ? roundMoney(Number(inv.final_payable_amount))
+              : computedFinal
             const amountPaid = Number(inv.amount_paid ?? 0)
             const amountPaidSafe = Number.isFinite(amountPaid) ? Math.max(0, amountPaid) : 0
-            const pending = roundMoney(payableTotal - amountPaidSafe)
+            const pendingOutstanding = roundMoney(contractTotalBeforePayments - amountPaidSafe)
+            const adjustedNet = adjustedNetFromInvoice(inv)
             const overdueFlag = isOverdue(inv.updated_at)
-            const holdFlag = isHold(payableTotal)
+            const holdFlag = isHold(contractTotalBeforePayments)
             const hasCommission = shouldShowCommissionRow(inv)
 
             return (
@@ -487,15 +491,18 @@ function PayerQueue({
                       {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium text-accent-2">{fmtAmount(pending)}</span>
+                          <span className="text-lg font-semibold tracking-tight text-accent-2">
+                            {fmtAmount(adjustedNet)}
+                          </span>
                           <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
                             Partially Paid
                           </span>
                         </div>
-                        <span className="mt-0.5 block text-[11px] text-text-3">
-                          Pending • {fmtAmount(amountPaidSafe)} already paid
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
+                          Pending • {fmtAmount(pendingOutstanding)} • {fmtAmount(amountPaidSafe)}{' '}
+                          already paid
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
                           {amountColumnSubtext(inv)}
                         </span>
                       </div>
@@ -504,10 +511,10 @@ function PayerQueue({
                     <div className="flex max-w-[16rem] gap-1.5">
                       {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
-                        <span className="font-medium text-accent-2">
-                          {fmtAmount(adjustedNetFromInvoice(inv))}
+                        <span className="text-lg font-semibold tracking-tight text-accent-2">
+                          {fmtAmount(adjustedNet)}
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
                           {amountColumnSubtext(inv)}
                         </span>
                       </div>
@@ -516,10 +523,10 @@ function PayerQueue({
                     <div className="flex max-w-[16rem] gap-1.5">
                       {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
-                        <span className="font-medium text-accent-2">
-                          {fmtAmount(adjustedNetFromInvoice(inv))}
+                        <span className="text-lg font-semibold tracking-tight text-accent-2">
+                          {fmtAmount(adjustedNet)}
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
+                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
                           {amountColumnSubtext(inv)}
                         </span>
                       </div>

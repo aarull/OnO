@@ -147,7 +147,7 @@ export function InvoiceDetail({
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-3">
             Adjusted net amount
           </p>
-          <p className="mt-2 font-serif text-3xl font-semibold tracking-tight text-accent-2">
+          <p className="mt-4 font-serif text-3xl font-medium tabular-nums leading-tight tracking-[-0.02em] whitespace-nowrap text-[#b6aff5]">
             {fmtAmount(adjustedNetFromInvoice(invoice))}
           </p>
           <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">

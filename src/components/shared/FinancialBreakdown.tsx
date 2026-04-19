@@ -95,7 +95,9 @@ export function FinancialBreakdown({
               <dt className="text-sm text-text-3">
                 Agency Commission ({commissionRatePct}%)
               </dt>
-              <dd className="text-sm font-medium tabular-nums text-red">−{fmtAmount(commissionAmountNum)}</dd>
+              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+                −{fmtAmount(commissionAmountNum)}
+              </dd>
             </div>
           )}
           <div className="my-3 border-t border-dashed border-border/80" />
@@ -103,35 +105,41 @@ export function FinancialBreakdown({
             <dt className="text-sm font-bold uppercase tracking-wide text-text">
               Net payable base
             </dt>
-            <dd className="text-base font-bold tabular-nums text-text">{fmtAmount(netPayableBase)}</dd>
+            <dd className="whitespace-nowrap text-base font-bold tabular-nums text-text">
+              {fmtAmount(netPayableBase)}
+            </dd>
           </div>
         </dl>
       </div>
 
       {/* Final payout / settlement */}
-      <div className="mt-4 rounded-r border border-accent/25 bg-gradient-to-b from-accent/[0.07] to-transparent p-4">
-        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-accent-2">
+      <div className="mt-4 rounded-r border border-accent/25 bg-gradient-to-b from-accent/[0.07] to-transparent p-5">
+        <p className="mb-5 text-[10px] font-semibold uppercase tracking-widest text-accent-2/80">
           Final payout
         </p>
         <dl className="space-y-3">
           {showTdsRow && (
             <div className="flex justify-between gap-3">
               <dt className="text-sm text-text-2">TDS (if applied)</dt>
-              <dd className="text-sm font-medium tabular-nums text-red">−{fmtAmount(tdsAmountNum)}</dd>
+              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+                −{fmtAmount(tdsAmountNum)}
+              </dd>
             </div>
           )}
           {hasPartialPayments && (
             <div className="flex justify-between gap-3">
               <dt className="text-sm text-text-2">Amount released</dt>
-              <dd className="text-sm font-medium tabular-nums text-red">−{fmtAmount(amountPaidNum)}</dd>
+              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+                −{fmtAmount(amountPaidNum)}
+              </dd>
             </div>
           )}
           <div className="my-3 border-t border-border/80" />
           <div className="flex justify-between gap-3">
-            <dt className="text-sm font-bold uppercase tracking-wide text-accent-2">
+            <dt className="text-sm font-medium uppercase tracking-wide text-accent-2/85">
               Final pending balance
             </dt>
-            <dd className="font-serif text-2xl font-semibold tabular-nums leading-none text-accent-2">
+            <dd className="whitespace-nowrap font-serif text-2xl font-medium tabular-nums leading-tight tracking-[-0.02em] text-[#aaa3eb]">
               {fmtAmount(finalPendingBalance)}
             </dd>
           </div>
@@ -140,16 +148,20 @@ export function FinancialBreakdown({
 
       {hasPartialPayments && (
         <div className="mt-4 border-t border-border pt-4">
-          <div className="h-1.5 w-full rounded-full bg-gray-800">
-            <div
-              className="h-1.5 rounded-full bg-indigo-500"
-              style={{ width: `${paidPercent}%` }}
-            />
+          <div className="flex flex-col items-center gap-2">
+            <div className="h-1.5 w-full rounded-full bg-gray-800">
+              <div
+                className="h-1.5 rounded-full bg-indigo-500/80"
+                style={{ width: `${paidPercent}%` }}
+              />
+            </div>
+            <p className="text-center text-xs text-text-3">
+              <span className="whitespace-nowrap">
+                {fmtAmount(amountPaidNum)} Paid • {fmtAmount(pendingBalanceNum)} Pending (
+                {paidPercent}%)
+              </span>
+            </p>
           </div>
-          <p className="mt-2 text-xs text-text-3">
-            {fmtAmount(amountPaidNum)} Paid • {fmtAmount(pendingBalanceNum)} Pending ({paidPercent}
-            %)
-          </p>
           {mostRecentPayerNote.length > 0 && (
             <div className="mt-3 rounded-r border border-border bg-gray-800/50 p-2">
               <div className="flex">
