@@ -1,36 +1,39 @@
 import type { Invoice } from './types'
 import { roundMoney } from './utils'
 
-/** Prefer API `commission_rate`, fall back to `commission_percentage`. */
-export function commissionRateFromInvoice(inv: Invoice): number {
-  const r = Number(inv.commission_rate ?? inv.commission_percentage ?? 0)
-  return Number.isFinite(r) && r > 0 ? Math.round(r) : 0
+/** Persisted commission rupees from API only — never derived from base × rate. */
+export function commissionAmountStored(inv: Invoice): number {
+  if (inv.commission_amount == null) return 0
+  const a = Number(inv.commission_amount)
+  if (!Number.isFinite(a) || a === 0) return 0
+  return roundMoney(Math.abs(a))
 }
 
-export function commissionAmountFromInvoice(inv: Invoice, baseSafe: number, rate: number): number {
-  const fromApi = Number(inv.commission_amount)
-  if (inv.commission_amount != null && Number.isFinite(fromApi) && Math.abs(fromApi) > 0) {
-    return roundMoney(Math.abs(fromApi))
-  }
-  if (rate > 0 && baseSafe > 0) return roundMoney((baseSafe * rate) / 100)
+/** Show deduction row when persisted `commission_rate` from API is &gt; 0. */
+export function shouldShowCommissionRow(inv: Invoice): boolean {
+  const cr = Number(inv.commission_rate)
+  return inv.commission_rate != null && Number.isFinite(cr) && cr > 0
+}
+
+/** Display % for the commission row — uses `invoice.commission_rate` only. */
+export function commissionRateFromInvoice(inv: Invoice): number {
+  const cr = Number(inv.commission_rate)
+  if (inv.commission_rate != null && Number.isFinite(cr) && cr > 0) return Math.round(cr)
   return 0
 }
 
-/** Adjusted net = Base + GST − agency commission (before TDS). */
+/** Adjusted net = Base + GST − persisted `commission_amount` (0 if unset). */
 export function adjustedNetFromInvoice(inv: Invoice): number {
   const base = Number(inv.amount)
   const baseSafe = Number.isFinite(base) ? base : 0
   const gstAmount = inv.gst ? roundMoney(baseSafe * 0.18) : 0
   const gross = roundMoney(baseSafe + gstAmount)
-  const rate = commissionRateFromInvoice(inv)
-  const commission = commissionAmountFromInvoice(inv, baseSafe, rate)
-  return roundMoney(gross - commission)
+  return roundMoney(gross - commissionAmountStored(inv))
 }
 
 export function amountColumnSubtext(inv: Invoice): string {
   const base = Number(inv.amount)
   const baseSafe = Number.isFinite(base) ? base : 0
-  const rate = commissionRateFromInvoice(inv)
   const fmt = (n: number) =>
     n.toLocaleString('en-IN', {
       style: 'currency',
@@ -38,8 +41,9 @@ export function amountColumnSubtext(inv: Invoice): string {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-  if (rate <= 0) {
-    return `${fmt(baseSafe)} original`
+  const cr = Number(inv.commission_rate)
+  if (inv.commission_rate != null && Number.isFinite(cr) && cr > 0) {
+    return `${fmt(baseSafe)} original • ${Math.round(cr)}% agency fee deducted`
   }
-  return `${fmt(baseSafe)} original • ${rate}% agency fee deducted`
+  return `${fmt(baseSafe)} original`
 }

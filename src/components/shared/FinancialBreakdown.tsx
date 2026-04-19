@@ -1,8 +1,9 @@
 import type { Invoice, PaymentHistoryEntry } from '../../lib/types'
 import {
   adjustedNetFromInvoice,
-  commissionAmountFromInvoice,
+  commissionAmountStored,
   commissionRateFromInvoice,
+  shouldShowCommissionRow,
 } from '../../lib/invoicePayout'
 import { fmtAmount, roundMoney } from '../../lib/utils'
 
@@ -30,9 +31,9 @@ export function FinancialBreakdown({
       : 0
   const showTdsRow = !simplifiedCreatorPayout && tdsAmountNum > 0
 
-  const commissionRate = commissionRateFromInvoice(invoice)
-  const commissionAmountNum = commissionAmountFromInvoice(invoice, baseSafe, commissionRate)
-  const showCommissionRow = commissionRate > 0
+  const commissionAmountNum = commissionAmountStored(invoice)
+  const commissionRatePct = commissionRateFromInvoice(invoice)
+  const showCommissionRow = shouldShowCommissionRow(invoice)
 
   const netPayableBase = adjustedNetFromInvoice(invoice)
 
@@ -92,7 +93,7 @@ export function FinancialBreakdown({
           {showCommissionRow && (
             <div className="flex justify-between gap-3">
               <dt className="text-sm text-text-3">
-                Agency Commission ({commissionRate}%)
+                Agency Commission ({commissionRatePct}%)
               </dt>
               <dd className="text-sm font-medium tabular-nums text-red">−{fmtAmount(commissionAmountNum)}</dd>
             </div>

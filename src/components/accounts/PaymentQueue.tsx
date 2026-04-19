@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase'
 import {
   adjustedNetFromInvoice,
   amountColumnSubtext,
-  commissionRateFromInvoice,
+  shouldShowCommissionRow,
 } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { cn, fmtAmount, roundMoney, timeAgo } from '../../lib/utils'
@@ -471,7 +471,7 @@ function PayerQueue({
             const pending = roundMoney(payableTotal - amountPaidSafe)
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(payableTotal)
-            const hasCommission = commissionRateFromInvoice(inv) > 0
+            const hasCommission = shouldShowCommissionRow(inv)
 
             return (
               <tr
