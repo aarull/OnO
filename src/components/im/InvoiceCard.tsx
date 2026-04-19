@@ -25,7 +25,8 @@ export function InvoiceCard({
 }: InvoiceCardProps) {
   const avatar = avatarColor(invoice.creator_name)
   const isPayerRejectedIm = invoiceHasStatus(invoice, 'payer_rejected_im')
-  const payerRemark = invoice.rejection_note?.trim() ?? ''
+  const isAuditRejected = invoiceHasStatus(invoice, 'audit_rejected')
+  const rejectionRemark = invoice.rejection_note?.trim() ?? ''
 
   return (
     <div
@@ -36,7 +37,12 @@ export function InvoiceCard({
               'border-b border-border border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50%',
               'hover:from-amber/[0.11]'
             )
-          : 'hover:bg-bg-3/50'
+          : isAuditRejected
+            ? cn(
+                'border-b border-border border-l-2 border-l-red/55 bg-gradient-to-r from-red/[0.1] from-0% to-transparent to-50%',
+                'hover:from-red/[0.14]'
+              )
+            : 'hover:bg-bg-3/50'
       )}
     >
       {/* Header: Invoice ID + flag chip + time (mirrors AuditorQueue flag column) */}
@@ -46,6 +52,11 @@ export function InvoiceCard({
           {isPayerRejectedIm && (
             <span className="inline-flex items-center rounded-full border border-amber/35 bg-amber/10 px-2 py-0.5 text-[11px] font-medium text-amber">
               Payer return
+            </span>
+          )}
+          {isAuditRejected && (
+            <span className="inline-flex items-center rounded-full border border-red/35 bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
+              Accounts rejected
             </span>
           )}
           <span className="text-xs text-text-3">{timeAgo(invoice.created_at)}</span>
@@ -85,7 +96,22 @@ export function InvoiceCard({
           <p className="text-sm leading-relaxed text-text">
             <span className="font-semibold text-amber">Payer remark: </span>
             <span className="text-text">
-              {payerRemark.length > 0 ? payerRemark : '—'}
+              {rejectionRemark.length > 0 ? rejectionRemark : '—'}
+            </span>
+          </p>
+        </div>
+      )}
+      {isAuditRejected && (
+        <div
+          className={cn(
+            'mb-4 rounded-r border border-red/25 border-l-2 border-l-red/60 bg-red-bg/50',
+            'px-4 py-3 pl-5 transition-colors hover:bg-red-bg/70'
+          )}
+        >
+          <p className="text-sm leading-relaxed text-text">
+            <span className="font-semibold text-red">Accounts remark: </span>
+            <span className="text-text">
+              {rejectionRemark.length > 0 ? rejectionRemark : '—'}
             </span>
           </p>
         </div>
@@ -101,7 +127,16 @@ export function InvoiceCard({
       </div>
 
       {/* Actions */}
-      {isPayerRejectedIm ? (
+      {isAuditRejected ? (
+        <Button
+          variant="accent"
+          size="xs"
+          className="w-full border border-red/35"
+          onClick={() => onFixResubmitAccounts?.(invoice)}
+        >
+          Fix & Resubmit
+        </Button>
+      ) : isPayerRejectedIm ? (
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             variant="red"
