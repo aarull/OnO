@@ -143,17 +143,17 @@ export function InvoiceDetail({
               </button>
             )}
         </div>
-        <div className="rounded-r-2 border border-white/10 bg-gradient-to-br from-bg-2 via-bg-2 to-bg-3/40 px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-3">
+        <div className="rounded-r-2 border border-white/10 bg-gradient-to-br from-bg-2 via-bg-2 to-bg-3/40 px-8 py-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="flex w-full items-start justify-between gap-4">
+            <div className="max-w-[60%] min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-3">
                 Adjusted net amount
               </p>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
+              <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-text-3">
                 Base + GST − agency commission (before TDS and releases).
               </p>
             </div>
-            <p className="shrink-0 self-end text-right font-serif text-2xl font-medium tabular-nums leading-tight tracking-[-0.02em] text-[#b6aff5] sm:self-center">
+            <p className="shrink-0 whitespace-nowrap text-right font-serif text-xl font-medium tabular-nums leading-snug tracking-[-0.02em] text-[#b6aff5]">
               {fmtAmount(adjustedNetFromInvoice(invoice))}
             </p>
           </div>
