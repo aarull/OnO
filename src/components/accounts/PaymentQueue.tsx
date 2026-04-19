@@ -448,6 +448,9 @@ function PayerQueue({
             const hasFinal =
               inv.final_payable_amount != null && !Number.isNaN(Number(inv.final_payable_amount))
             const payableTotal = hasFinal ? Number(inv.final_payable_amount) : computedFinal
+            const amountPaid = Number(inv.amount_paid ?? 0)
+            const amountPaidSafe = Number.isFinite(amountPaid) ? Math.max(0, amountPaid) : 0
+            const pending = roundMoney(payableTotal - amountPaidSafe)
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(payableTotal)
 
@@ -460,7 +463,19 @@ function PayerQueue({
                 <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
                 <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
                 <td className="px-4 py-3 text-sm text-text">
-                  {hasFinal ? (
+                  {amountPaidSafe > 0 ? (
+                    <span className="inline-block">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium text-accent-2">{fmtAmount(pending)}</span>
+                        <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
+                          Partially Paid
+                        </span>
+                      </span>
+                      <span className="ml-1 block text-[11px] text-text-3">
+                        Pending • {fmtAmount(amountPaidSafe)} already paid
+                      </span>
+                    </span>
+                  ) : hasFinal ? (
                     <span>
                       <span className="font-medium text-accent-2">
                         {fmtAmount(Number(inv.final_payable_amount))}
