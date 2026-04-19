@@ -110,6 +110,11 @@ export function InvoiceDetail({
     ? Math.min(100, Math.max(0, Math.round((amountPaidNum / finalPayableNum) * 100)))
     : 0
   const pendingBalanceNum = hasPartialPayments ? Math.max(0, roundMoney(finalPayableNum - amountPaidNum)) : 0
+  const pendingBalanceDisplay = Number.isFinite(finalPayableNum)
+    ? hasPartialPayments
+      ? pendingBalanceNum
+      : finalPayableNum
+    : 0
   const mostRecentPayerNote =
     paymentHistorySorted.find((h) => (h.note ?? '').trim().length > 0)?.note?.trim() ?? ''
 
@@ -201,12 +206,28 @@ export function InvoiceDetail({
             )}
             <div className="flex justify-between border-t border-border pt-4">
               <dt className="text-sm font-semibold uppercase tracking-wide text-text">
-                Final Payment
+                Total Invoice Value
               </dt>
               <dd className="font-serif text-lg font-semibold leading-none text-accent-2">
-                {fmtAmount(finalPaymentAmount)}
+                {fmtAmount(finalPayableNum)}
               </dd>
             </div>
+            {hasPartialPayments && (
+              <div className="flex justify-between">
+                <dt className="text-sm text-text-2">Amount Released</dt>
+                <dd className="text-sm font-medium text-red">-₹{Math.round(amountPaidNum).toLocaleString('en-IN')}</dd>
+              </div>
+            )}
+
+            <div className="flex justify-between border-t-2 border-border pt-4">
+              <dt className="text-sm font-semibold uppercase tracking-wide text-text">
+                Pending Balance
+              </dt>
+              <dd className="font-serif text-xl font-semibold leading-none text-accent-2">
+                ₹{Math.round(pendingBalanceDisplay).toLocaleString('en-IN')}
+              </dd>
+            </div>
+
             {hasPartialPayments && (
               <div className="pt-2">
                 <div className="mt-2 h-1.5 w-full rounded-full bg-gray-800">
