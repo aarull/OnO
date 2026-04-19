@@ -9,13 +9,15 @@ const STEPS: { key: InvoiceStatus | 'rejected'; label: string }[] = [
   { key: 'submitted', label: 'Submitted' },
   { key: 'im_review', label: 'IM Review' },
   { key: 'im_approved', label: 'IM Approved' },
-  { key: 'released', label: 'With Accounts' },
+  { key: 'audit_cleared', label: 'With Accounts' },
   { key: 'released', label: 'Released' },
 ]
 
 
 function getStepIndex(status: InvoiceStatus): number {
   if (status === 'released') return 4
+  if (status === 'partially_paid') return 4
+  if (status === 'audit_cleared') return 3
   if (status === 'im_approved') return 2
   if (status === 'im_review') return 1
   if (status === 'submitted') return 0
@@ -25,6 +27,8 @@ function getStepIndex(status: InvoiceStatus): number {
 export function StatusTracker({ status }: StatusTrackerProps) {
   const isRejected = status === 'rejected'
   const currentIndex = isRejected ? 1 : getStepIndex(status)
+  const finalStepLabel =
+    status === 'partially_paid' ? 'Partially Released' : 'Released'
 
   const steps = isRejected
     ? [
@@ -42,6 +46,7 @@ export function StatusTracker({ status }: StatusTrackerProps) {
         const isFuture = !isCompleted && !isCurrent
         const isLast = i === steps.length - 1
         const isRejectedStep = isRejected && i === 2
+        const stepLabel = !isRejected && i === 4 ? finalStepLabel : step.label
 
         return (
           <div key={`${step.key}-${i}`} className="flex gap-3">
@@ -92,7 +97,7 @@ export function StatusTracker({ status }: StatusTrackerProps) {
                   isFuture && 'text-text-3'
                 )}
               >
-                {step.label}
+                {stepLabel}
                 {isCurrent && !isRejectedStep && (
                   <span className="ml-2 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
                 )}
