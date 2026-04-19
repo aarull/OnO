@@ -665,8 +665,8 @@ export function PaymentQueue() {
     try {
       await api.post(`/invoices/${encodeURIComponent(inv.id)}/release`, {
         amount_released: Number(args.amountToRelease),
-        payment_reason: args.paymentReason,
-        note_to_creator: args.noteToCreator || undefined,
+        reason: args.paymentReason,
+        note: args.noteToCreator || undefined,
       })
       toast.success('Payment released successfully')
       setReleaseOpen(false)
