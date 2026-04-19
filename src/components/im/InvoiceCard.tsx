@@ -128,14 +128,24 @@ export function InvoiceCard({
 
       {/* Actions */}
       {isAuditRejected ? (
-        <Button
-          variant="accent"
-          size="xs"
-          className="w-full border border-red/35"
-          onClick={() => onFixResubmitAccounts?.(invoice)}
-        >
-          Fix & Resubmit
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="red"
+            size="xs"
+            className="flex-1 border border-red/40"
+            onClick={() => onRejectToCreator?.(invoice.id)}
+          >
+            Send back to creator
+          </Button>
+          <Button
+            variant="accent"
+            size="xs"
+            className="flex-1 border border-red/35"
+            onClick={() => onFixResubmitAccounts?.(invoice)}
+          >
+            Fix &amp; Resubmit
+          </Button>
+        </div>
       ) : isPayerRejectedIm ? (
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button

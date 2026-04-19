@@ -147,10 +147,12 @@ export function InvoiceQueue() {
 
   async function handlePayerRejectToCreator(reason: string) {
     if (!payerCreatorRejectInvoice) return
+    const cleaned = reason.trim()
     try {
       await persistInvoiceUpdate(payerCreatorRejectInvoice.id, {
         status: 'rejected',
-        rejection_note: reason,
+        // overwrite any previous remark (incl. audit remark) when returning to creator
+        rejection_note: cleaned.length > 0 ? cleaned : null,
       })
       toast.success('Invoice returned to creator')
       setPayerCreatorRejectInvoice(null)
