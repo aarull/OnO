@@ -22,15 +22,17 @@ export function roundMoney(n: number): number {
   return Math.round(x * 100) / 100
 }
 
+/** Indian-style grouping (lakhs/crores) with rupee prefix; always 2 decimal places. */
 export function fmtAmount(n: number): string {
   const x = Number(n)
   if (!Number.isFinite(x)) return '₹—'
-  return x.toLocaleString('en-IN', {
-    style: 'currency',
-    currency: 'INR',
+  const abs = Math.abs(x)
+  const body = abs.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+  if (x < 0) return `-₹${body}`
+  return `₹${body}`
 }
 
 export function fmtDate(iso: string): string {

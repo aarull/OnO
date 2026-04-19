@@ -143,21 +143,25 @@ export function InvoiceDetail({
               </button>
             )}
         </div>
-        <div className="rounded-r-2 border border-border bg-gradient-to-br from-bg-2 via-bg-2 to-bg-3/40 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-3">
-            Adjusted net amount
-          </p>
-          <p className="mt-4 font-serif text-3xl font-medium tabular-nums leading-tight tracking-[-0.02em] whitespace-nowrap text-[#b6aff5]">
-            {fmtAmount(adjustedNetFromInvoice(invoice))}
-          </p>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
-            Base + GST − agency commission (before TDS and releases).
-          </p>
+        <div className="rounded-r-2 border border-white/10 bg-gradient-to-br from-bg-2 via-bg-2 to-bg-3/40 px-6 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-3">
+                Adjusted net amount
+              </p>
+              <p className="mt-1.5 text-[11px] leading-relaxed text-text-3">
+                Base + GST − agency commission (before TDS and releases).
+              </p>
+            </div>
+            <p className="shrink-0 self-end text-right font-serif text-2xl font-medium tabular-nums leading-tight tracking-[-0.02em] text-[#b6aff5] sm:self-center">
+              {fmtAmount(adjustedNetFromInvoice(invoice))}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Status Tracker */}
-      <div className="mb-6 rounded-r-2 border border-border bg-bg-2 p-5">
+      <div className="mb-6 rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
         <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
           Status
         </p>
@@ -179,41 +183,41 @@ export function InvoiceDetail({
         <FinancialBreakdown invoice={invoice} simplifiedCreatorPayout={simplifiedCreatorPayout} />
 
         {/* Creator & bank */}
-        <div className="rounded-r-2 border border-border bg-bg-2 p-5">
+        <div className="rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
           <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
             Creator &amp; Bank Details
           </p>
           <dl className="space-y-3">
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">Account Holder</dt>
-              <dd className="text-sm font-medium text-text">{accountHolderDisplay}</dd>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">Account Holder</dt>
+              <dd className="shrink-0 text-right text-sm font-medium text-text">{accountHolderDisplay}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">Account Number</dt>
-              <dd className="text-sm font-medium text-text font-mono">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">Account Number</dt>
+              <dd className="shrink-0 text-right text-sm font-medium font-mono text-text">
                 {invoice.account_no}
               </dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-sm text-text-2">IFSC Code</dt>
-              <dd className="text-sm font-medium text-text font-mono">{invoice.ifsc}</dd>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">IFSC Code</dt>
+              <dd className="shrink-0 text-right text-sm font-medium font-mono text-text">{invoice.ifsc}</dd>
             </div>
             {hasGstNumber && (
-              <div className="flex justify-between">
-                <dt className="text-sm text-text-2">GST Number</dt>
-                <dd className="text-sm font-medium text-text font-mono">{gstNumberResolved}</dd>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="min-w-0 text-sm text-text-2">GST Number</dt>
+                <dd className="shrink-0 text-right text-sm font-medium font-mono text-text">{gstNumberResolved}</dd>
               </div>
             )}
             {hasPanNumber && (
-              <div className="flex justify-between">
-                <dt className="text-sm text-text-2">PAN Number</dt>
-                <dd className="text-sm font-medium text-text font-mono">{panNumberResolved}</dd>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="min-w-0 text-sm text-text-2">PAN Number</dt>
+                <dd className="shrink-0 text-right text-sm font-medium font-mono text-text">{panNumberResolved}</dd>
               </div>
             )}
             {showTaxIdFallback && (
-              <div className="flex justify-between">
-                <dt className="text-sm text-text-2">Tax ID</dt>
-                <dd className="text-sm font-medium text-text-3">N/A</dd>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="min-w-0 text-sm text-text-2">Tax ID</dt>
+                <dd className="shrink-0 text-right text-sm font-medium text-text-3">N/A</dd>
               </div>
             )}
           </dl>
@@ -222,7 +226,7 @@ export function InvoiceDetail({
 
       {/* Audit log */}
       {audit.length > 0 && (
-        <div className="mt-6 rounded-r-2 border border-border bg-bg-2 p-5">
+        <div className="mt-6 rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
           <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
             Activity Log
           </p>
@@ -250,7 +254,7 @@ export function InvoiceDetail({
 
       {/* Payment updates (Final Payer notes / partial releases) */}
       {paymentHistorySorted.length > 0 && (
-        <div className="mt-6 rounded-r-2 border border-border bg-bg-2 p-5">
+        <div className="mt-6 rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
           <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
             Payment Updates
           </p>

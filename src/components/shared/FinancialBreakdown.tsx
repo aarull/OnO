@@ -69,43 +69,47 @@ export function FinancialBreakdown({
     paymentHistorySorted.find((h) => (h.note ?? '').trim().length > 0)?.note?.trim() ?? ''
 
   return (
-    <div className="rounded-r-2 border border-border bg-bg-2 p-5">
+    <div className="rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
       <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
         Financial Breakdown
       </p>
 
       {/* Contract / invoice (adjusted net) */}
-      <div className="rounded-r border border-border/70 bg-bg-3/25 p-4">
+      <div className="rounded-r border border-white/10 bg-bg-3/25 px-6 py-4">
         <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-text-3">
           Total invoice
         </p>
         <dl className="space-y-3">
-          <div className="flex justify-between gap-3">
-            <dt className="text-sm text-text-2">Base Amount</dt>
-            <dd className="text-sm font-medium tabular-nums text-text">{fmtAmount(baseSafe)}</dd>
+          <div className="flex items-center justify-between gap-3">
+            <dt className="min-w-0 text-sm text-text-2">Base Amount</dt>
+            <dd className="shrink-0 text-right text-sm font-medium tabular-nums text-text">
+              {fmtAmount(baseSafe)}
+            </dd>
           </div>
           {gstAmount > 0 && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-sm text-text-2">GST (18%)</dt>
-              <dd className="text-sm font-medium tabular-nums text-text-2">+{fmtAmount(gstAmount)}</dd>
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">GST (18%)</dt>
+              <dd className="shrink-0 text-right text-sm font-medium tabular-nums text-text-2">
+                +{fmtAmount(gstAmount)}
+              </dd>
             </div>
           )}
           {showCommissionRow && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-sm text-text-3">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-3">
                 Agency Commission ({commissionRatePct}%)
               </dt>
-              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+              <dd className="shrink-0 text-right text-sm font-medium tabular-nums text-red">
                 −{fmtAmount(commissionAmountNum)}
               </dd>
             </div>
           )}
           <div className="my-3 border-t border-dashed border-border/80" />
-          <div className="flex justify-between gap-3">
-            <dt className="text-sm font-bold uppercase tracking-wide text-text">
+          <div className="flex items-center justify-between gap-3">
+            <dt className="min-w-0 text-sm font-medium uppercase tracking-wide text-text">
               Net payable base
             </dt>
-            <dd className="whitespace-nowrap text-base font-bold tabular-nums text-text">
+            <dd className="shrink-0 text-right text-base font-medium tabular-nums text-text">
               {fmtAmount(netPayableBase)}
             </dd>
           </div>
@@ -113,33 +117,33 @@ export function FinancialBreakdown({
       </div>
 
       {/* Final payout / settlement */}
-      <div className="mt-4 rounded-r border border-accent/25 bg-gradient-to-b from-accent/[0.07] to-transparent p-5">
+      <div className="mt-4 rounded-r border border-white/10 bg-gradient-to-b from-accent/[0.07] to-transparent px-6 py-5">
         <p className="mb-5 text-[10px] font-semibold uppercase tracking-widest text-accent-2/80">
           Final payout
         </p>
         <dl className="space-y-3">
           {showTdsRow && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-sm text-text-2">TDS (if applied)</dt>
-              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">TDS (if applied)</dt>
+              <dd className="shrink-0 text-right text-sm font-medium tabular-nums text-red">
                 −{fmtAmount(tdsAmountNum)}
               </dd>
             </div>
           )}
           {hasPartialPayments && (
-            <div className="flex justify-between gap-3">
-              <dt className="text-sm text-text-2">Amount released</dt>
-              <dd className="whitespace-nowrap text-sm font-medium tabular-nums text-red">
+            <div className="flex items-center justify-between gap-3">
+              <dt className="min-w-0 text-sm text-text-2">Amount released</dt>
+              <dd className="shrink-0 text-right text-sm font-medium tabular-nums text-red">
                 −{fmtAmount(amountPaidNum)}
               </dd>
             </div>
           )}
           <div className="my-3 border-t border-border/80" />
-          <div className="flex justify-between gap-3">
-            <dt className="text-sm font-medium uppercase tracking-wide text-accent-2/85">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <dt className="min-w-0 text-sm font-medium uppercase tracking-wide text-accent-2/85">
               Final pending balance
             </dt>
-            <dd className="whitespace-nowrap font-serif text-2xl font-medium tabular-nums leading-tight tracking-[-0.02em] text-[#aaa3eb]">
+            <dd className="text-right font-serif text-xl font-medium tabular-nums leading-tight tracking-[-0.02em] text-[#aaa3eb] sm:shrink-0">
               {fmtAmount(finalPendingBalance)}
             </dd>
           </div>
