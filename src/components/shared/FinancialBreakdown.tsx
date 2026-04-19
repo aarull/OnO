@@ -68,79 +68,76 @@ export function FinancialBreakdown({
   const mostRecentPayerNote =
     paymentHistorySorted.find((h) => (h.note ?? '').trim().length > 0)?.note?.trim() ?? ''
 
-  /** Row shell: no-overlap layout — label left (max 60%, can wrap), amount right (nowrap). */
-  const rowClass =
-    'flex w-full items-start justify-between gap-4'
-  const labelClass = 'max-w-[60%] min-w-0 text-sm font-medium leading-snug'
-  const amountClass =
-    'shrink-0 whitespace-nowrap text-right text-lg font-medium tabular-nums tracking-normal'
+  /** Stable row: horizontal flex, label grows/wraps on the left, amount pinned right (ml-auto), never wraps. */
+  const row = 'flex w-full flex-row items-start gap-3'
+  const label = 'min-w-0 flex-1 text-left text-sm font-medium leading-snug'
+  const amt =
+    'ml-auto shrink-0 whitespace-nowrap text-right text-base font-medium tabular-nums'
 
   return (
-    <div className="rounded-r-2 border border-white/10 bg-bg-2 px-8 py-6">
-      <p className="mb-4 text-xs font-medium uppercase tracking-widest text-text-3">
+    <div className="rounded-r-2 border border-white/10 bg-bg-2 px-6 py-5">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-3">
         Financial Breakdown
       </p>
 
       {/* Contract / invoice (adjusted net) */}
-      <div className="rounded-r border border-white/10 bg-bg-3/25 px-7 py-5">
-        <p className="mb-3 text-[10px] font-medium uppercase tracking-widest text-text-3">
+      <div className="rounded-r border border-white/10 bg-bg-3/25 px-6 py-4">
+        <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-text-3">
           Total invoice
         </p>
-        <dl>
-          <div className={rowClass}>
-            <dt className={`${labelClass} text-text-2`}>Base Amount</dt>
-            <dd className={`${amountClass} text-text`}>{fmtAmount(baseSafe)}</dd>
+        <dl className="space-y-3">
+          <div className={row}>
+            <dt className={`${label} text-text-2`}>Base Amount</dt>
+            <dd className={`${amt} text-text`}>{fmtAmount(baseSafe)}</dd>
           </div>
           {gstAmount > 0 && (
-            <div className={`${rowClass} mt-3`}>
-              <dt className={`${labelClass} text-text-2`}>GST (18%)</dt>
-              <dd className={`${amountClass} text-text-2`}>+{fmtAmount(gstAmount)}</dd>
+            <div className={row}>
+              <dt className={`${label} text-text-2`}>GST (18%)</dt>
+              <dd className={`${amt} text-text-2`}>+{fmtAmount(gstAmount)}</dd>
             </div>
           )}
           {showCommissionRow && (
-            <div className={`${rowClass} mt-3`}>
-              <dt className={`${labelClass} text-text-3`}>
+            <div className={row}>
+              <dt className={`${label} text-text-3`}>
                 Agency Commission ({commissionRatePct}%)
               </dt>
-              <dd className={`${amountClass} text-red`}>-{fmtAmount(commissionAmountNum)}</dd>
+              <dd className={`${amt} text-red`}>-{fmtAmount(commissionAmountNum)}</dd>
             </div>
           )}
           <div className="my-3 border-t border-dashed border-border/80" />
-          <div className={rowClass}>
-            <dt className={`${labelClass} uppercase tracking-wide text-text`}>Net payable base</dt>
-            <dd className={`shrink-0 whitespace-nowrap text-right text-xl font-medium tabular-nums text-text`}>
-              {fmtAmount(netPayableBase)}
-            </dd>
+          <div className={row}>
+            <dt className={`${label} uppercase tracking-wide text-text`}>Net payable base</dt>
+            <dd className={`${amt} text-text`}>{fmtAmount(netPayableBase)}</dd>
           </div>
         </dl>
       </div>
 
       {/* Final payout / settlement */}
-      <div className="mt-4 rounded-r border border-white/10 bg-gradient-to-b from-accent/[0.07] to-transparent px-7 py-6">
-        <p className="mb-5 text-[10px] font-medium uppercase tracking-widest text-accent-2/80">
+      <div className="mt-4 rounded-r border border-white/10 bg-gradient-to-b from-accent/[0.07] to-transparent px-6 py-5">
+        <p className="mb-5 text-[10px] font-semibold uppercase tracking-widest text-accent-2/80">
           Final payout
         </p>
-        <dl>
+        <dl className="space-y-3">
           {showTdsRow && (
-            <div className={rowClass}>
-              <dt className={`${labelClass} text-text-2`}>TDS (if applied)</dt>
-              <dd className={`${amountClass} text-red`}>-{fmtAmount(tdsAmountNum)}</dd>
+            <div className={row}>
+              <dt className={`${label} text-text-2`}>TDS (if applied)</dt>
+              <dd className={`${amt} text-red`}>-{fmtAmount(tdsAmountNum)}</dd>
             </div>
           )}
           {hasPartialPayments && (
-            <div className={`${rowClass} ${showTdsRow ? 'mt-3' : ''}`}>
-              <dt className={`${labelClass} text-text-2`}>Amount released</dt>
-              <dd className={`${amountClass} text-red`}>-{fmtAmount(amountPaidNum)}</dd>
+            <div className={row}>
+              <dt className={`${label} text-text-2`}>Amount released</dt>
+              <dd className={`${amt} text-red`}>-{fmtAmount(amountPaidNum)}</dd>
             </div>
           )}
           <div className="my-3 border-t border-border/80" />
-          <div className={rowClass}>
-            <dt
-              className={`${labelClass} uppercase tracking-wide text-accent-2/85`}
-            >
+          <div className={row}>
+            <dt className={`${label} uppercase tracking-wide text-accent-2/85`}>
               Final pending balance
             </dt>
-            <dd className="shrink-0 whitespace-nowrap text-right font-serif text-xl font-medium tabular-nums leading-snug tracking-[-0.02em] text-[#aaa3eb]">
+            <dd
+              className={`${amt} font-serif leading-snug tracking-[-0.02em] text-[#aaa3eb]`}
+            >
               {fmtAmount(finalPendingBalance)}
             </dd>
           </div>
