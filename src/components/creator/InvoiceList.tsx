@@ -115,7 +115,8 @@ export function InvoiceList() {
           .order('created_at', { ascending: false })
 
         if (error) throw new Error(error.message)
-        setInvoices(Array.isArray(data) ? (data as Invoice[]) : [])
+        // Supabase types can widen `data` when generics aren't wired; cast safely for UI usage.
+        setInvoices(Array.isArray(data) ? (data as unknown as Invoice[]) : [])
       } else {
         const data: Invoice[] = await api.get('/invoices')
         setInvoices(Array.isArray(data) ? data : [])
