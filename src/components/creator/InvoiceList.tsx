@@ -76,8 +76,50 @@ export function InvoiceList() {
 
   const fetchInvoices = useCallback(async () => {
     try {
-      const data: Invoice[] = await api.get('/invoices')
-      setInvoices(Array.isArray(data) ? data : [])
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select(
+            [
+              'id',
+              'creator_id',
+              'creator_name',
+              'campaign',
+              'amount',
+              'gst',
+              'account_holder_name',
+              'pan',
+              'pan_number',
+              'gst_number',
+              'account_no',
+              'ifsc',
+              'assigned_im',
+              'assigned_im_phone',
+              'invoice_number',
+              'invoice_file_url',
+              'status',
+              'im_remark',
+              'rejection_note',
+              'tds_amount',
+              'tds_deducted',
+              'commission_rate',
+              'commission_percentage',
+              'commission_amount',
+              'final_payable_amount',
+              'amount_paid',
+              'payment_history',
+              'created_at',
+              'updated_at',
+            ].join(',')
+          )
+          .order('created_at', { ascending: false })
+
+        if (error) throw new Error(error.message)
+        setInvoices(Array.isArray(data) ? (data as Invoice[]) : [])
+      } else {
+        const data: Invoice[] = await api.get('/invoices')
+        setInvoices(Array.isArray(data) ? data : [])
+      }
     } catch {
       toast.error('Failed to load invoices')
     } finally {
@@ -88,6 +130,19 @@ export function InvoiceList() {
   useEffect(() => {
     void fetchInvoices()
   }, [fetchInvoices])
+
+  // If PDFs are still being generated, refresh periodically so Download enables
+  // without requiring a hard refresh.
+  useEffect(() => {
+    const needsPdf = invoices.some(
+      (i) => !(typeof i.invoice_file_url === 'string' && i.invoice_file_url.trim().length > 0)
+    )
+    if (!needsPdf) return
+    const t = window.setInterval(() => {
+      void fetchInvoices()
+    }, 7000)
+    return () => window.clearInterval(t)
+  }, [invoices, fetchInvoices])
 
   const totalSubmitted = invoices.length
   const pendingReview = invoices.filter((i) => {
@@ -161,7 +216,8 @@ export function InvoiceList() {
             View
           </button>
           <span className="text-border">·</span>
-          {typeof invoice.pdf_url === 'string' && invoice.pdf_url.trim().length > 0 ? (
+          {typeof invoice.invoice_file_url === 'string' &&
+          invoice.invoice_file_url.trim().length > 0 ? (
             <button
               type="button"
               className="text-accent transition-opacity hover:opacity-80"
