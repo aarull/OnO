@@ -176,6 +176,7 @@ export function NewInvoiceForm() {
 
   const [savedInvoice, setSavedInvoice] = useState<Invoice | null>(null)
   const [useSavedDetails, setUseSavedDetails] = useState(true)
+  const wasUsingSavedDetailsRef = useRef<boolean>(useSavedDetails)
 
   const baseAmount = useMemo(() => {
     const n = Number(amount)
@@ -204,6 +205,33 @@ export function NewInvoiceForm() {
       return rest
     })
   }
+
+  function clearTaxIdWarning() {
+    setErrors((prev) => {
+      if (!prev.taxId) return prev
+      const { taxId: _, ...rest } = prev
+      return rest
+    })
+  }
+
+  useEffect(() => {
+    const wasUsing = wasUsingSavedDetailsRef.current
+    wasUsingSavedDetailsRef.current = useSavedDetails
+    if (!wasUsing && !useSavedDetails) return
+    if (wasUsing && !useSavedDetails) {
+      if (step !== 2) return
+      // Auto-focus first empty tax field to save a click.
+      requestAnimationFrame(() => {
+        const panEmpty = pan.trim().length === 0
+        const gstEmpty = gstNumber.trim().length === 0
+        const targetId =
+          gst === 'yes' && gstEmpty ? 'new-invoice-gst-number' : panEmpty ? 'new-invoice-pan' : ''
+        if (!targetId) return
+        const el = document.getElementById(targetId) as HTMLInputElement | null
+        el?.focus()
+      })
+    }
+  }, [useSavedDetails, step, pan, gstNumber, gst])
 
   useEffect(() => {
     async function loadMostRecentInvoice() {
@@ -263,8 +291,11 @@ export function NewInvoiceForm() {
   function validateStep2(): boolean {
     const next: Record<string, string> = {}
     if (!assignedIm) next.assignedIm = 'Please select an IM member'
-    if (!pan.trim()) next.pan = 'PAN is required'
-    if (gst === 'yes' && !gstNumber.trim()) next.gstNumber = 'GST number is required'
+    const hasPan = pan.trim().length > 0
+    const hasGstNumber = gstNumber.trim().length > 0
+    if (!hasPan && !hasGstNumber) {
+      next.taxId = 'Please provide either a PAN or GST number for tax processing.'
+    }
     if (!accountNo.trim()) next.accountNo = 'Account number is required'
     if (!ifsc.trim()) next.ifsc = 'IFSC code is required'
     setErrors(next)
@@ -515,25 +546,29 @@ export function NewInvoiceForm() {
                 />
                 <FormInput
                   label="PAN"
+                  id="new-invoice-pan"
                   placeholder="e.g. ABCDE1234F"
                   value={pan}
                   onChange={(e) => {
                     setPan(e.target.value.toUpperCase())
                     clearPanError()
+                    clearTaxIdWarning()
                   }}
                   maxLength={10}
                   className="uppercase"
-                  error={errors.pan}
                 />
                 {gst === 'yes' && (
                   <FormInput
                     label="GST Number"
+                    id="new-invoice-gst-number"
                     placeholder="e.g. 22AAAAA0000A1Z5"
                     value={gstNumber}
-                    onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      setGstNumber(e.target.value.toUpperCase())
+                      clearTaxIdWarning()
+                    }}
                     maxLength={15}
                     className="uppercase"
-                    error={errors.gstNumber}
                   />
                 )}
                 <FormInput
@@ -551,11 +586,35 @@ export function NewInvoiceForm() {
                   error={errors.ifsc}
                   className="uppercase"
                 />
+                {errors.taxId && (
+                  <p className="sm:col-span-2 text-[11px] leading-relaxed text-text-3">
+                    {errors.taxId}
+                  </p>
+                )}
               </div>
             )}
 
             {useSavedDetails && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {savedInvoice &&
+                  pan.trim().length === 0 &&
+                  gstNumber.trim().length === 0 && (
+                    <div className="sm:col-span-2 rounded-r border border-white/10 bg-bg-3/35 px-3 py-2">
+                      <p className="flex items-start gap-2 text-[11px] leading-relaxed text-text-3">
+                        <span
+                          className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white/15 text-[10px] text-text-2"
+                          aria-hidden
+                          title="Tax details help accounts process invoices faster."
+                        >
+                          i
+                        </span>
+                        <span>
+                          Your saved profile is missing both PAN and GST number. Toggle “Use saved
+                          details” off to add either one for tax processing.
+                        </span>
+                      </p>
+                    </div>
+                  )}
                 <FormInput
                   label="Account Holder"
                   value={accountHolderName}
@@ -568,7 +627,6 @@ export function NewInvoiceForm() {
                   value={pan}
                   onChange={(e) => setPan(e.target.value.toUpperCase())}
                   disabled
-                  error={errors.pan}
                   className="opacity-50"
                 />
                 {gst === 'yes' && (
@@ -577,7 +635,6 @@ export function NewInvoiceForm() {
                     value={gstNumber}
                     onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
                     disabled
-                    error={errors.gstNumber}
                     className="opacity-50"
                   />
                 )}
@@ -597,7 +654,7 @@ export function NewInvoiceForm() {
                   error={errors.ifsc}
                   className="opacity-50"
                 />
-                {(errors.pan || errors.gstNumber || errors.accountNo || errors.ifsc) && (
+                {(errors.accountNo || errors.ifsc) && (
                   <p className="sm:col-span-2 text-xs text-red">
                     Some saved details are missing. Toggle “Use saved details” off to enter them
                     manually.
