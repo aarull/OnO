@@ -166,6 +166,7 @@ export function NewInvoiceForm() {
   const [gst, setGst] = useState('yes')
   const [commissionPercent, setCommissionPercent] = useState<CommissionPercent>(0)
   const [pan, setPan] = useState('')
+  const [gstNumber, setGstNumber] = useState('')
   const [accountHolderName, setAccountHolderName] = useState('')
   const [accountNo, setAccountNo] = useState('')
   const [ifsc, setIfsc] = useState('')
@@ -230,8 +231,9 @@ export function NewInvoiceForm() {
     setAccountNo(savedInvoice.account_no ?? '')
     setIfsc(savedInvoice.ifsc ?? '')
     setPan((savedInvoice.pan_number ?? savedInvoice.pan ?? '').toUpperCase())
+    setGstNumber((savedInvoice.gst_number ?? '').toUpperCase())
     setErrors((prev) => {
-      const { accountNo: _a, ifsc: _i, pan: _p, ...rest } = prev
+      const { accountNo: _a, ifsc: _i, pan: _p, gstNumber: _g, ...rest } = prev
       return rest
     })
   }, [savedInvoice, useSavedDetails])
@@ -241,6 +243,13 @@ export function NewInvoiceForm() {
     const last4 = raw.slice(-4)
     if (!last4) return '****'
     return `****${last4}`
+  }
+
+  function maskAccountCompact(acct: string) {
+    const raw = (acct ?? '').replace(/\s+/g, '')
+    const last3 = raw.slice(-3)
+    if (!last3) return '******'
+    return `******${last3}`
   }
 
   function validateStep1(): boolean {
@@ -255,6 +264,7 @@ export function NewInvoiceForm() {
     const next: Record<string, string> = {}
     if (!assignedIm) next.assignedIm = 'Please select an IM member'
     if (!pan.trim()) next.pan = 'PAN is required'
+    if (gst === 'yes' && !gstNumber.trim()) next.gstNumber = 'GST number is required'
     if (!accountNo.trim()) next.accountNo = 'Account number is required'
     if (!ifsc.trim()) next.ifsc = 'IFSC code is required'
     setErrors(next)
@@ -278,6 +288,7 @@ export function NewInvoiceForm() {
         amount: Number(amount),
         gst: gst === 'yes',
         pan: pan.trim(),
+        gst_number: gstNumber.trim(),
         account_holder_name: accountHolderName.trim(),
         account_no: accountNo.trim(),
         ifsc: ifsc.trim(),
@@ -286,6 +297,12 @@ export function NewInvoiceForm() {
         commission_rate: commissionPercent,
         commission_percentage: commissionPercent,
         commission_amount: commissionAmount,
+      }
+
+      if (import.meta.env.DEV) {
+        // Debugging: verify submit is reached + exact payload
+        // eslint-disable-next-line no-console
+        console.log('Payload:', payload)
       }
 
       if (pdfFile) {
@@ -508,6 +525,17 @@ export function NewInvoiceForm() {
                   className="uppercase"
                   error={errors.pan}
                 />
+                {gst === 'yes' && (
+                  <FormInput
+                    label="GST Number"
+                    placeholder="e.g. 22AAAAA0000A1Z5"
+                    value={gstNumber}
+                    onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                    maxLength={15}
+                    className="uppercase"
+                    error={errors.gstNumber}
+                  />
+                )}
                 <FormInput
                   label="Account Number"
                   placeholder="XXXX XXXX XXXX"
@@ -533,25 +561,48 @@ export function NewInvoiceForm() {
                   value={accountHolderName}
                   onChange={(e) => setAccountHolderName(e.target.value)}
                   disabled
+                  className="opacity-50"
                 />
                 <FormInput
                   label="PAN"
                   value={pan}
                   onChange={(e) => setPan(e.target.value.toUpperCase())}
                   disabled
+                  error={errors.pan}
+                  className="opacity-50"
                 />
+                {gst === 'yes' && (
+                  <FormInput
+                    label="GST Number"
+                    value={gstNumber}
+                    onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                    disabled
+                    error={errors.gstNumber}
+                    className="opacity-50"
+                  />
+                )}
                 <FormInput
                   label="Account Number"
-                  value={accountNo}
+                  value={maskAccountCompact(accountNo)}
                   onChange={(e) => setAccountNo(e.target.value)}
                   disabled
+                  error={errors.accountNo}
+                  className="opacity-50"
                 />
                 <FormInput
                   label="IFSC"
                   value={ifsc}
                   onChange={(e) => setIfsc(e.target.value.toUpperCase())}
                   disabled
+                  error={errors.ifsc}
+                  className="opacity-50"
                 />
+                {(errors.pan || errors.gstNumber || errors.accountNo || errors.ifsc) && (
+                  <p className="sm:col-span-2 text-xs text-red">
+                    Some saved details are missing. Toggle “Use saved details” off to enter them
+                    manually.
+                  </p>
+                )}
               </div>
             )}
 
