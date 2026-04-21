@@ -161,16 +161,28 @@ export function InvoiceList() {
             View
           </button>
           <span className="text-border">·</span>
-          <button
-            type="button"
-            className="text-accent transition-opacity hover:opacity-80"
-            onClick={(e) => {
-              e.stopPropagation()
-              void handleInvoiceDownload(invoice)
-            }}
-          >
-            Download
-          </button>
+          {typeof invoice.pdf_url === 'string' && invoice.pdf_url.trim().length > 0 ? (
+            <button
+              type="button"
+              className="text-accent transition-opacity hover:opacity-80"
+              onClick={(e) => {
+                e.stopPropagation()
+                void handleInvoiceDownload(invoice)
+              }}
+            >
+              Download
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="Processing PDF…"
+              className="cursor-not-allowed text-text-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Download
+            </button>
+          )}
 
           {normalizeInvoiceStatus(invoice.status) === 'rejected' && (
             <button

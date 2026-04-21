@@ -1,9 +1,15 @@
 import type { Invoice } from '../../lib/types'
 import { cn } from '../../lib/utils'
-import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocumentActions'
+import {
+  handleInvoiceDownload,
+  handleInvoiceView,
+  hasBackendPdf,
+  hasUploadedPdfFile,
+} from '../../lib/invoiceDocumentActions'
 
 const linkStyles =
   'text-xs font-medium text-accent-2 underline-offset-2 transition-colors hover:text-accent hover:underline'
+const disabledStyles = 'text-xs font-medium text-text-3 cursor-not-allowed'
 
 interface InvoicePdfActionsProps {
   invoice: Invoice
@@ -18,6 +24,8 @@ export function InvoicePdfActions({
   className,
   linkClassName,
 }: InvoicePdfActionsProps) {
+  const pdfReady = hasBackendPdf(invoice) || hasUploadedPdfFile(invoice)
+
   async function onView(e: React.MouseEvent) {
     e.stopPropagation()
     await handleInvoiceView(invoice, onViewTimeline)
@@ -39,9 +47,20 @@ export function InvoicePdfActions({
       <span className="select-none text-[10px] text-text-3" aria-hidden>
         ·
       </span>
-      <button type="button" onClick={onDownload} className={linkClassName ?? linkStyles}>
-        Download
-      </button>
+      {pdfReady ? (
+        <button type="button" onClick={onDownload} className={linkClassName ?? linkStyles}>
+          Download
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled
+          title="Processing PDF…"
+          className={cn(linkClassName ?? disabledStyles)}
+        >
+          Download
+        </button>
+      )}
     </div>
   )
 }

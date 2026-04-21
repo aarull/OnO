@@ -57,6 +57,8 @@ export interface Invoice {
   /** Optional override; otherwise IM_PHONE_DIRECTORY lookup by assigned_im */
   assigned_im_phone?: string
   invoice_number?: string
+  /** Backend-generated invoice PDF URL (may be null while generating). */
+  pdf_url?: string | null
   /** Present when creator uploaded a PDF; fetch with auth to open/download */
   invoice_file_url?: string
   status: InvoiceStatus
