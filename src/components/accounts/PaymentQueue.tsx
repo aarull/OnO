@@ -316,10 +316,11 @@ function AuditorQueue({
                 <Fragment key={inv.id}>
                   <tr
                     className={cn(
-                      'border-b border-border transition-colors hover:bg-bg-3/50',
+                      'cursor-pointer border-b border-border transition-colors hover:bg-bg-3/50',
                       isPayerRejected &&
                         'border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50% hover:from-amber/[0.11]'
                     )}
+                    onClick={() => onViewTimeline(inv)}
                   >
                     <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
                     <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
@@ -361,7 +362,10 @@ function AuditorQueue({
                         <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
                         <button
                           type="button"
-                          onClick={() => setAuditInvoice(inv)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setAuditInvoice(inv)
+                          }}
                           className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
                         >
                           Audit
@@ -375,6 +379,7 @@ function AuditorQueue({
                         'border-b border-border border-l-2 border-l-amber/55 bg-red/[0.05]',
                         'hover:bg-red/[0.07]'
                       )}
+                      onClick={() => onViewTimeline(inv)}
                     >
                       <td colSpan={8} className="px-4 py-3 pl-5">
                         <p className="text-sm leading-relaxed text-text">
@@ -480,7 +485,8 @@ function PayerQueue({
             return (
               <tr
                 key={inv.id}
-                className="border-b border-border transition-colors hover:bg-bg-3/50"
+                className="cursor-pointer border-b border-border transition-colors hover:bg-bg-3/50"
+                onClick={() => onViewTimeline(inv)}
               >
                 <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
                 <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
@@ -557,7 +563,10 @@ function PayerQueue({
                     <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
                     <button
                       type="button"
-                      onClick={() => onProcess(inv)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onProcess(inv)
+                      }}
                       className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
                     >
                       Release Payment

@@ -87,7 +87,11 @@ export function ApprovedList() {
             </thead>
             <tbody className="divide-y divide-border">
               {invoices.map((inv) => (
-                <tr key={inv.id} className="transition-colors hover:bg-bg-3">
+                <tr
+                  key={inv.id}
+                  className="cursor-pointer transition-colors hover:bg-bg-3"
+                  onClick={() => setTimelineInvoiceId(inv.id)}
+                >
                   <td className="px-5 py-4 font-mono text-xs text-accent-2">{inv.id}</td>
                   <td className="px-5 py-4 text-sm text-text">{inv.creator_name}</td>
                   <td className="px-5 py-4 text-sm text-text-2">{inv.campaign}</td>
