@@ -516,7 +516,7 @@ export function NewInvoiceForm() {
                   className="uppercase"
                 />
                 {errors.taxId && (
-                  <p className="sm:col-span-2 text-[11px] leading-relaxed text-text-3">
+                  <p className="sm:col-span-2 text-xs text-red">
                     {errors.taxId}
                   </p>
                 )}
@@ -593,7 +593,7 @@ export function NewInvoiceForm() {
             )}
 
             <FormSelect
-              label="Assign to IM Member"
+              label="Name your campaign manager"
               options={[{ value: '', label: 'Select IM member' }, ...imOptions]}
               value={assignedIm}
               onChange={(e) => setAssignedIm(e.target.value)}
