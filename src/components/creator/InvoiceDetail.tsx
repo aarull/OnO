@@ -16,7 +16,7 @@ interface InvoiceDetailProps {
   backLabel?: string
   showReminderToggle?: boolean
   /**
-   * Creator-facing estimate: hide TDS in the breakdown and use (Base + GST) − commission
+   * Creator-facing estimate: hide TDS in the breakdown and use (Base + GST)
    * for displayed totals. IM / accounts views should omit this (default false).
    */
   simplifiedCreatorPayout?: boolean
@@ -147,10 +147,10 @@ export function InvoiceDetail({
           <div className="flex w-full items-start justify-between gap-4">
             <div className="max-w-[60%] min-w-0">
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-3">
-                Adjusted net amount
+                Net payable amount
               </p>
               <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-text-3">
-                Base + GST − agency commission (before TDS and releases).
+                Base + GST (before TDS and releases).
               </p>
             </div>
             <p className="shrink-0 whitespace-nowrap text-right font-serif text-xl font-medium tabular-nums leading-snug tracking-[-0.02em] text-[#b6aff5]">

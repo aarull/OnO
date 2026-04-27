@@ -6,7 +6,7 @@ interface InvoiceDetailPanelProps {
   onClose: () => void
   backLabel?: string
   showReminderToggle?: boolean
-  /** When true, creator-style payout breakdown (no TDS line; Base + GST − commission). */
+  /** When true, creator-style payout breakdown (no TDS line; Base + GST). */
   simplifiedCreatorPayout?: boolean
 }
 

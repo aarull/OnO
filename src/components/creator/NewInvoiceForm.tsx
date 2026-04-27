@@ -20,56 +20,6 @@ function isPdfFile(file: File) {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
 }
 
-type CommissionPercent = 0 | 10 | 20
-
-function AgencyCommissionPills({
-  value,
-  onChange,
-}: {
-  value: CommissionPercent
-  onChange: (v: CommissionPercent) => void
-}) {
-  const options: { label: string; value: CommissionPercent }[] = [
-    { label: 'None', value: 0 },
-    { label: '10%', value: 10 },
-    { label: '20%', value: 20 },
-  ]
-  return (
-    <div className="space-y-2">
-      <p className="text-xs font-medium text-text-2">Agency Commission</p>
-      <p className="text-[11px] leading-relaxed text-text-3">
-        Optional. Deducted from your estimated payout before any accounts-side adjustments.
-      </p>
-      <div
-        className="flex gap-1 rounded-full border border-border bg-bg-3/70 p-1 shadow-inner shadow-black/20"
-        role="radiogroup"
-        aria-label="Agency commission rate"
-      >
-        {options.map((opt) => {
-          const active = value === opt.value
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(opt.value)}
-              className={cn(
-                'min-w-0 flex-1 rounded-full px-3 py-2 text-center text-xs font-semibold tracking-wide transition-all duration-200',
-                active
-                  ? 'bg-indigo-600 text-white shadow-[0_0_18px_rgba(79,70,229,0.45)] ring-1 ring-indigo-400/40'
-                  : 'border border-border/70 bg-bg-2/40 text-text-2 hover:border-border hover:bg-bg-4/60 hover:text-text'
-              )}
-            >
-              {opt.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 interface PdfDropzoneProps {
   file: File | null
   onFileChange: (file: File | null) => void
@@ -164,7 +114,6 @@ export function NewInvoiceForm() {
   const [campaign, setCampaign] = useState('')
   const [amount, setAmount] = useState('')
   const [gst, setGst] = useState('yes')
-  const [commissionPercent, setCommissionPercent] = useState<CommissionPercent>(0)
   const [pan, setPan] = useState('')
   const [gstNumber, setGstNumber] = useState('')
   const [accountHolderName, setAccountHolderName] = useState('')
@@ -188,15 +137,7 @@ export function NewInvoiceForm() {
     return roundMoney(baseAmount * 0.18)
   }, [gst, baseAmount])
 
-  const commissionAmount = useMemo(
-    () => roundMoney((baseAmount * commissionPercent) / 100),
-    [baseAmount, commissionPercent]
-  )
-
-  const totalPayable = useMemo(
-    () => roundMoney(baseAmount + gstAmount - commissionAmount),
-    [baseAmount, gstAmount, commissionAmount]
-  )
+  const totalPayable = useMemo(() => roundMoney(baseAmount + gstAmount), [baseAmount, gstAmount])
 
   function clearPanError() {
     setErrors((prev) => {
@@ -325,9 +266,6 @@ export function NewInvoiceForm() {
         ifsc: ifsc.trim(),
         assigned_im: assignedIm,
         document_mode: 'auto',
-        commission_rate: commissionPercent,
-        commission_percentage: commissionPercent,
-        commission_amount: commissionAmount,
       }
 
       if (import.meta.env.DEV) {
@@ -437,7 +375,6 @@ export function NewInvoiceForm() {
                 </div>
                 <p className="text-[11px] text-text-3">GST applicable?</p>
               </div>
-              <AgencyCommissionPills value={commissionPercent} onChange={setCommissionPercent} />
             </div>
 
             {/* Estimated payout card */}
@@ -455,14 +392,6 @@ export function NewInvoiceForm() {
                     <dt className="text-text-2">GST (18%)</dt>
                     <dd className="font-medium tabular-nums text-accent-2">
                       +{fmtAmount(gstAmount)}
-                    </dd>
-                  </div>
-                )}
-                {commissionAmount > 0 && (
-                  <div className="flex items-center justify-between gap-3 text-sm">
-                    <dt className="text-text-2">Agency commission ({commissionPercent}%)</dt>
-                    <dd className="font-medium tabular-nums text-red">
-                      -{fmtAmount(commissionAmount)}
                     </dd>
                   </div>
                 )}

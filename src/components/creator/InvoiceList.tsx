@@ -6,7 +6,7 @@ import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocum
 import { handleWhatsAppReminder } from '../../lib/imWhatsAppReminder'
 import { normalizeInvoiceStatus } from '../../lib/invoiceStatus'
 import { supabase } from '../../lib/supabase'
-import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
+import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { cn, fmtAmount, timeAgo } from '../../lib/utils'
 import { PageHeader } from '../layout/PageHeader'
@@ -102,9 +102,6 @@ export function InvoiceList() {
               'rejection_note',
               'tds_amount',
               'tds_deducted',
-              'commission_rate',
-              'commission_percentage',
-              'commission_amount',
               'final_payable_amount',
               'amount_paid',
               'payment_history',
@@ -170,9 +167,6 @@ export function InvoiceList() {
       render: (row: Invoice) => (
         <span className="inline-block max-w-[14rem]">
           <span className="font-medium text-accent-2">{fmtAmount(adjustedNetFromInvoice(row))}</span>
-          <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
-            {amountColumnSubtext(row)}
-          </span>
         </span>
       ),
     },

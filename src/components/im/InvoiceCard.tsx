@@ -1,4 +1,4 @@
-import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
+import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { invoiceHasStatus } from '../../lib/invoiceStatus'
 import { fmtAmount, timeAgo, initials, avatarColor, cn } from '../../lib/utils'
@@ -98,7 +98,6 @@ export function InvoiceCard({
         <p className="text-lg font-semibold text-accent-2">
           {fmtAmount(adjustedNetFromInvoice(invoice))}
         </p>
-        <p className="mt-0.5 text-[11px] leading-snug text-text-3">{amountColumnSubtext(invoice)}</p>
       </div>
 
       {hasPaymentProgress && (

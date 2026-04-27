@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { api } from '../../lib/api'
-import { adjustedNetFromInvoice, amountColumnSubtext } from '../../lib/invoicePayout'
+import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import type { Invoice, AuditEntry } from '../../lib/types'
 import { fmtAmount, timeAgo, cn } from '../../lib/utils'
 import { MetricCard } from '../shared/MetricCard'
@@ -91,9 +91,6 @@ export function AgencyView() {
       render: (row: Invoice) => (
         <span className="inline-block max-w-[14rem]">
           <span className="font-medium text-accent-2">{fmtAmount(adjustedNetFromInvoice(row))}</span>
-          <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
-            {amountColumnSubtext(row)}
-          </span>
         </span>
       ),
     },

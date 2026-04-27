@@ -1,10 +1,5 @@
 import type { Invoice, PaymentHistoryEntry } from '../../lib/types'
-import {
-  adjustedNetFromInvoice,
-  commissionAmountStored,
-  commissionRateFromInvoice,
-  shouldShowCommissionRow,
-} from '../../lib/invoicePayout'
+import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import { fmtAmount, roundMoney } from '../../lib/utils'
 
 export interface FinancialBreakdownProps {
@@ -30,10 +25,6 @@ export function FinancialBreakdown({
       ? roundMoney(Math.abs(tdsRaw))
       : 0
   const showTdsRow = !simplifiedCreatorPayout && tdsAmountNum > 0
-
-  const commissionAmountNum = commissionAmountStored(invoice)
-  const commissionRatePct = commissionRateFromInvoice(invoice)
-  const showCommissionRow = shouldShowCommissionRow(invoice)
 
   const netPayableBase = adjustedNetFromInvoice(invoice)
 
@@ -94,14 +85,6 @@ export function FinancialBreakdown({
             <div className={row}>
               <dt className={`${label} text-text-2`}>GST (18%)</dt>
               <dd className={`${amt} text-text-2`}>+{fmtAmount(gstAmount)}</dd>
-            </div>
-          )}
-          {showCommissionRow && (
-            <div className={row}>
-              <dt className={`${label} text-text-3`}>
-                Agency Commission ({commissionRatePct}%)
-              </dt>
-              <dd className={`${amt} text-red`}>-{fmtAmount(commissionAmountNum)}</dd>
             </div>
           )}
           <div className="my-3 border-t border-dashed border-border/80" />

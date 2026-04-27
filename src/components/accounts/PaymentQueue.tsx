@@ -8,8 +8,6 @@ import { invoiceHasStatus, normalizeInvoiceStatus } from '../../lib/invoiceStatu
 import { supabase } from '../../lib/supabase'
 import {
   adjustedNetFromInvoice,
-  amountColumnSubtext,
-  shouldShowCommissionRow,
 } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
 import { cn, fmtAmount, roundMoney, timeAgo } from '../../lib/utils'
@@ -329,9 +327,6 @@ function AuditorQueue({
                       <span className="font-medium text-accent-2">
                         {fmtAmount(adjustedNetFromInvoice(inv))}
                       </span>
-                      <span className="mt-0.5 block text-[11px] leading-snug text-text-3">
-                        {amountColumnSubtext(inv)}
-                      </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-text-2 font-mono">
                       <div className="max-w-[14rem] break-all">{inv.account_no}</div>
@@ -408,22 +403,6 @@ function AuditorQueue({
   )
 }
 
-function payerManagedPayoutDot(hasCommission: boolean) {
-  return (
-    <span
-      className="inline-flex h-4 w-2 shrink-0 items-center justify-center"
-      aria-hidden
-      title={hasCommission ? 'Managed payout (agency commission)' : undefined}
-    >
-      {hasCommission ? (
-        <span className="h-1.5 w-1.5 rounded-full bg-indigo-300 shadow-[0_0_10px_rgba(196,181,253,0.95)] ring-1 ring-white/25" />
-      ) : (
-        <span className="block h-1.5 w-1.5" />
-      )}
-    </span>
-  )
-}
-
 function PayerQueue({
   invoices,
   onViewTimeline,
@@ -480,7 +459,6 @@ function PayerQueue({
             const adjustedNet = adjustedNetFromInvoice(inv)
             const overdueFlag = isOverdue(inv.updated_at)
             const holdFlag = isHold(contractTotalBeforePayments)
-            const hasCommission = shouldShowCommissionRow(inv)
 
             return (
               <tr
@@ -494,7 +472,6 @@ function PayerQueue({
                 <td className="px-4 py-3 text-sm text-text">
                   {amountPaidSafe > 0 ? (
                     <div className="flex max-w-[16rem] gap-1.5">
-                      {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-lg font-semibold tracking-tight text-accent-2">
@@ -508,32 +485,21 @@ function PayerQueue({
                           Pending • {fmtAmount(pendingOutstanding)} • {fmtAmount(amountPaidSafe)}{' '}
                           already paid
                         </span>
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
-                          {amountColumnSubtext(inv)}
-                        </span>
                       </div>
                     </div>
                   ) : hasFinal ? (
                     <div className="flex max-w-[16rem] gap-1.5">
-                      {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
                         <span className="text-lg font-semibold tracking-tight text-accent-2">
                           {fmtAmount(adjustedNet)}
-                        </span>
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
-                          {amountColumnSubtext(inv)}
                         </span>
                       </div>
                     </div>
                   ) : (
                     <div className="flex max-w-[16rem] gap-1.5">
-                      {payerManagedPayoutDot(hasCommission)}
                       <div className="min-w-0 flex-1">
                         <span className="text-lg font-semibold tracking-tight text-accent-2">
                           {fmtAmount(adjustedNet)}
-                        </span>
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
-                          {amountColumnSubtext(inv)}
                         </span>
                       </div>
                     </div>
