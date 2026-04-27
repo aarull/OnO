@@ -11,7 +11,6 @@ import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
 import { FixResubmitAccountsModal } from './FixResubmitAccountsModal'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
-import { Modal } from '../shared/Modal'
 import { Button } from '../shared/Button'
 
 async function persistInvoiceUpdate(
@@ -312,45 +311,58 @@ export function InvoiceQueue() {
         onConfirm={handleRejectConfirm}
       />
 
-      <Modal
-        open={!!approvingInvoice}
-        onClose={closeApproveModal}
-        title="Approve Invoice"
-        subtitle={
-          approvingInvoice
-            ? `Approving ${approvingInvoice.invoice_number ?? approvingInvoice.id} for ${approvingInvoice.creator_name}`
-            : undefined
-        }
-        footer={
-          <>
-            <Button variant="outline" size="sm" onClick={closeApproveModal} disabled={approveSubmitting}>
-              Cancel
-            </Button>
-            <Button
-              variant="green"
-              size="sm"
-              onClick={() => void handleApproveConfirm()}
-              disabled={approveSubmitting}
-            >
-              {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
-            </Button>
-          </>
-        }
-      >
-        <div>
-          <label className="mb-2 block text-sm font-medium text-text">
-            Add a custom note or remark for the Accounts team{' '}
-            <span className="text-text-3">(Optional)</span>
-          </label>
-          <textarea
-            value={approveRemark}
-            onChange={(e) => setApproveRemark(e.target.value)}
-            placeholder="e.g. All details verified, proceed with payout."
-            rows={4}
-            className="w-full resize-none rounded-r border border-border bg-bg-3 px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
-          />
+      {approvingInvoice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={closeApproveModal}
+        >
+          <div
+            className="relative w-full max-w-md rounded-xl border border-gray-800 bg-[#1A1A1A] p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-5">
+              <h2 className="font-serif text-lg text-text">Approve Invoice</h2>
+              <p className="mt-1 text-sm text-text-2">
+                Approving {approvingInvoice.invoice_number ?? approvingInvoice.id} for{' '}
+                {approvingInvoice.creator_name}
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-text">
+                Add a custom note or remark for the Accounts team{' '}
+                <span className="text-text-3">(Optional)</span>
+              </label>
+              <textarea
+                value={approveRemark}
+                onChange={(e) => setApproveRemark(e.target.value)}
+                placeholder="e.g. All details verified, proceed with payout."
+                rows={4}
+                className="w-full resize-none rounded-r border border-gray-800 bg-[#141414] px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
+              />
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={closeApproveModal}
+                disabled={approveSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="green"
+                size="sm"
+                onClick={() => void handleApproveConfirm()}
+                disabled={approveSubmitting}
+              >
+                {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
+              </Button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
 
       {/* Reject to creator (payer-returned lane) */}
       <RejectModal
