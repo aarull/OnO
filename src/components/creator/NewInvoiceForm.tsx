@@ -593,7 +593,7 @@ export function NewInvoiceForm() {
             )}
 
             <FormSelect
-              label="Name your campaign manager"
+              label="Name your Campaign Manager"
               options={[{ value: '', label: 'Select IM member' }, ...imOptions]}
               value={assignedIm}
               onChange={(e) => setAssignedIm(e.target.value)}
