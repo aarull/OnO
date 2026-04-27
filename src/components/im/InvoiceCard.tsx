@@ -7,7 +7,7 @@ import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 
 interface InvoiceCardProps {
   invoice: Invoice
-  onApprove: (id: string) => void
+  onApprove: (invoice: Invoice) => void
   onReject: (id: string) => void
   onViewTimeline: (invoice: Invoice) => void
   /** Payer-returned lane: send back to creator with a new remark */
@@ -200,7 +200,7 @@ export function InvoiceCard({
             variant="green"
             size="xs"
             className="flex-1"
-            onClick={() => onApprove(invoice.id)}
+            onClick={() => onApprove(invoice)}
           >
             Approve ✓
           </Button>

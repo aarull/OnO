@@ -11,6 +11,8 @@ import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
 import { FixResubmitAccountsModal } from './FixResubmitAccountsModal'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
+import { Modal } from '../shared/Modal'
+import { Button } from '../shared/Button'
 
 async function persistInvoiceUpdate(
   invoiceId: string,
@@ -79,6 +81,9 @@ export function InvoiceQueue() {
   const [payerCreatorRejectInvoice, setPayerCreatorRejectInvoice] = useState<Invoice | null>(null)
   const [fixResubmitInvoice, setFixResubmitInvoice] = useState<Invoice | null>(null)
   const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
+  const [approvingInvoice, setApprovingInvoice] = useState<Invoice | null>(null)
+  const [approveRemark, setApproveRemark] = useState('')
+  const [approveSubmitting, setApproveSubmitting] = useState(false)
   const markedRef = useRef<Set<string>>(new Set())
 
   const fetchInvoices = useCallback(async () => {
@@ -116,14 +121,37 @@ export function InvoiceQueue() {
     fetchInvoices()
   }, [fetchInvoices])
 
-  async function handleApprove(id: string) {
+  async function handleApproveConfirm() {
+    const inv = approvingInvoice
+    if (!inv) return
+    const remark = approveRemark.trim()
     try {
-      await persistInvoiceUpdate(id, { status: 'im_approved' })
+      setApproveSubmitting(true)
+      await persistInvoiceUpdate(inv.id, {
+        status: 'im_approved',
+        im_remark: remark.length > 0 ? remark : null,
+      })
       toast.success('Invoice approved! Sent to Accounts ✅')
+      setApprovingInvoice(null)
+      setApproveRemark('')
       fetchInvoices()
     } catch {
       toast.error('Failed to approve invoice')
+    } finally {
+      setApproveSubmitting(false)
     }
+  }
+
+  function handleApproveClick(inv: Invoice) {
+    setApprovingInvoice(inv)
+    setApproveRemark('')
+    setApproveSubmitting(false)
+  }
+
+  function closeApproveModal() {
+    if (approveSubmitting) return
+    setApprovingInvoice(null)
+    setApproveRemark('')
   }
 
   function handleRejectClick(id: string) {
@@ -262,7 +290,7 @@ export function InvoiceQueue() {
             <InvoiceCard
               key={inv.id}
               invoice={inv}
-              onApprove={handleApprove}
+              onApprove={handleApproveClick}
               onReject={handleRejectClick}
               onRejectToCreator={(id) => {
                 const row = invoices.find((i) => i.id === id)
@@ -283,6 +311,46 @@ export function InvoiceQueue() {
         creatorName={rejectTarget?.creator_name ?? ''}
         onConfirm={handleRejectConfirm}
       />
+
+      <Modal
+        open={!!approvingInvoice}
+        onClose={closeApproveModal}
+        title="Approve Invoice"
+        subtitle={
+          approvingInvoice
+            ? `Approving ${approvingInvoice.invoice_number ?? approvingInvoice.id} for ${approvingInvoice.creator_name}`
+            : undefined
+        }
+        footer={
+          <>
+            <Button variant="outline" size="sm" onClick={closeApproveModal} disabled={approveSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              variant="green"
+              size="sm"
+              onClick={() => void handleApproveConfirm()}
+              disabled={approveSubmitting}
+            >
+              {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
+            </Button>
+          </>
+        }
+      >
+        <div>
+          <label className="mb-2 block text-sm font-medium text-text">
+            Add a custom note or remark for the Accounts team{' '}
+            <span className="text-text-3">(Optional)</span>
+          </label>
+          <textarea
+            value={approveRemark}
+            onChange={(e) => setApproveRemark(e.target.value)}
+            placeholder="e.g. All details verified, proceed with payout."
+            rows={4}
+            className="w-full resize-none rounded-r border border-border bg-bg-3 px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
+          />
+        </div>
+      </Modal>
 
       {/* Reject to creator (payer-returned lane) */}
       <RejectModal
