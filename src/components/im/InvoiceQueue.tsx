@@ -80,7 +80,7 @@ export function InvoiceQueue() {
   const [payerCreatorRejectInvoice, setPayerCreatorRejectInvoice] = useState<Invoice | null>(null)
   const [fixResubmitInvoice, setFixResubmitInvoice] = useState<Invoice | null>(null)
   const [timelineInvoiceId, setTimelineInvoiceId] = useState<string | null>(null)
-  const [approvingInvoice, setApprovingInvoice] = useState<Invoice | null>(null)
+  const [approvingId, setApprovingId] = useState<string | null>(null)
   const [approveRemark, setApproveRemark] = useState('')
   const [approveSubmitting, setApproveSubmitting] = useState(false)
   const markedRef = useRef<Set<string>>(new Set())
@@ -120,18 +120,16 @@ export function InvoiceQueue() {
     fetchInvoices()
   }, [fetchInvoices])
 
-  async function handleApproveConfirm() {
-    const inv = approvingInvoice
-    if (!inv) return
+  async function handleApproveConfirm(id: string) {
     const remark = approveRemark.trim()
     try {
       setApproveSubmitting(true)
-      await persistInvoiceUpdate(inv.id, {
+      await persistInvoiceUpdate(id, {
         status: 'im_approved',
         im_remark: remark.length > 0 ? remark : null,
       })
       toast.success('Invoice approved! Sent to Accounts ✅')
-      setApprovingInvoice(null)
+      setApprovingId(null)
       setApproveRemark('')
       fetchInvoices()
     } catch {
@@ -141,15 +139,15 @@ export function InvoiceQueue() {
     }
   }
 
-  function handleApproveClick(inv: Invoice) {
-    setApprovingInvoice(inv)
+  function handleApproveClick(id: string) {
+    setApprovingId(id)
     setApproveRemark('')
     setApproveSubmitting(false)
   }
 
-  function closeApproveModal() {
+  function closeApproveOverlay() {
     if (approveSubmitting) return
-    setApprovingInvoice(null)
+    setApprovingId(null)
     setApproveRemark('')
   }
 
@@ -285,19 +283,66 @@ export function InvoiceQueue() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {invoices.map((inv) => (
-            <InvoiceCard
-              key={inv.id}
-              invoice={inv}
-              onApprove={handleApproveClick}
-              onReject={handleRejectClick}
-              onRejectToCreator={(id) => {
-                const row = invoices.find((i) => i.id === id)
-                if (row) setPayerCreatorRejectInvoice(row)
-              }}
-              onFixResubmitAccounts={(i) => setFixResubmitInvoice(i)}
-              onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
-            />
+          {invoices.map((invoice) => (
+            <div key={invoice.id} className="relative overflow-hidden">
+              <InvoiceCard
+                invoice={invoice}
+                onApprove={handleApproveClick}
+                onReject={handleRejectClick}
+                onRejectToCreator={(id) => {
+                  const row = invoices.find((i) => i.id === id)
+                  if (row) setPayerCreatorRejectInvoice(row)
+                }}
+                onFixResubmitAccounts={(i) => setFixResubmitInvoice(i)}
+                onViewTimeline={(i) => setTimelineInvoiceId(i.id)}
+              />
+
+              {approvingId === invoice.id && (
+                <div className="absolute inset-0 z-10 flex flex-col justify-between bg-[#1A1A1A]/95 p-5 backdrop-blur">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-serif text-lg text-text">Approve Invoice</p>
+                      <p className="mt-1 text-sm text-text-2">
+                        Approving {invoice.invoice_number ?? invoice.id} for {invoice.creator_name}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-text">
+                        Add a custom note or remark for the Accounts team{' '}
+                        <span className="text-text-3">(Optional)</span>
+                      </label>
+                      <textarea
+                        value={approveRemark}
+                        onChange={(e) => setApproveRemark(e.target.value)}
+                        placeholder="e.g. All details verified, proceed with payout."
+                        rows={4}
+                        className="w-full resize-none rounded-r border border-gray-800 bg-[#141414] px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={closeApproveOverlay}
+                      disabled={approveSubmitting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="green"
+                      size="sm"
+                      onClick={() => void handleApproveConfirm(invoice.id)}
+                      disabled={approveSubmitting}
+                    >
+                      {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -310,59 +355,6 @@ export function InvoiceQueue() {
         creatorName={rejectTarget?.creator_name ?? ''}
         onConfirm={handleRejectConfirm}
       />
-
-      {approvingInvoice && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={closeApproveModal}
-        >
-          <div
-            className="relative w-full max-w-md rounded-xl border border-gray-800 bg-[#1A1A1A] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5">
-              <h2 className="font-serif text-lg text-text">Approve Invoice</h2>
-              <p className="mt-1 text-sm text-text-2">
-                Approving {approvingInvoice.invoice_number ?? approvingInvoice.id} for{' '}
-                {approvingInvoice.creator_name}
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-text">
-                Add a custom note or remark for the Accounts team{' '}
-                <span className="text-text-3">(Optional)</span>
-              </label>
-              <textarea
-                value={approveRemark}
-                onChange={(e) => setApproveRemark(e.target.value)}
-                placeholder="e.g. All details verified, proceed with payout."
-                rows={4}
-                className="w-full resize-none rounded-r border border-gray-800 bg-[#141414] px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
-              />
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={closeApproveModal}
-                disabled={approveSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="green"
-                size="sm"
-                onClick={() => void handleApproveConfirm()}
-                disabled={approveSubmitting}
-              >
-                {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Reject to creator (payer-returned lane) */}
       <RejectModal

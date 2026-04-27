@@ -7,7 +7,7 @@ import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 
 interface InvoiceCardProps {
   invoice: Invoice
-  onApprove: (invoice: Invoice) => void
+  onApprove: (id: string) => void
   onReject: (id: string) => void
   onViewTimeline: (invoice: Invoice) => void
   /** Payer-returned lane: send back to creator with a new remark */
@@ -44,7 +44,7 @@ export function InvoiceCard({
   return (
     <div
       className={cn(
-        'animate-fade-up rounded-r-2 border border-border bg-bg-2 p-5 transition-colors',
+        'relative overflow-hidden animate-fade-up rounded-r-2 border border-border bg-bg-2 p-5 transition-colors',
         isPayerRejectedIm
           ? cn(
               'border-b border-border border-l-2 border-l-amber/55 bg-gradient-to-r from-amber/[0.08] from-0% to-transparent to-50%',
@@ -200,7 +200,7 @@ export function InvoiceCard({
             variant="green"
             size="xs"
             className="flex-1"
-            onClick={() => onApprove(invoice)}
+            onClick={() => onApprove(invoice.id)}
           >
             Approve ✓
           </Button>
