@@ -123,10 +123,19 @@ export function InvoiceQueue() {
     const remark = approveRemark.trim()
     try {
       setApproveSubmitting(true)
-      await persistInvoiceUpdate(id, {
+      const payload = {
+        invoiceId: id,
         status: 'im_approved',
         im_remark: remark.length > 0 ? remark : null,
-      })
+      }
+
+      const client = supabase
+      if (client) {
+        const { error } = await client.from('invoices').update(payload).eq('id', id)
+        if (error) throw new Error(error.message)
+      } else {
+        await api.patch('/invoices/' + encodeURIComponent(id) + '/status', payload)
+      }
       toast.success('Invoice approved! Sent to Accounts ✅')
       setApprovingId(null)
       setApproveRemark('')
