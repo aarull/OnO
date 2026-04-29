@@ -63,14 +63,14 @@ interface AuditModalProps {
 }
 
 function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
-  const [applyTds, setApplyTds] = useState(false)
+  const [tdsRate, setTdsRate] = useState<number>(0)
   const [rejectMode, setRejectMode] = useState(false)
   const [rejectionRemark, setRejectionRemark] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) {
-      setApplyTds(false)
+      setTdsRate(0)
       setRejectMode(false)
       setRejectionRemark('')
       setSubmitting(false)
@@ -82,8 +82,8 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
 
   const base = inv.amount
   const gst = gstAmount(inv)
-  const tdsAmount = applyTds ? roundMoney(base * 0.01) : 0
-  const finalPayable = roundMoney(base + gst - tdsAmount)
+  const tdsAmount = tdsRate > 0 ? roundMoney((base * tdsRate) / 100) : 0
+  const finalPayable = roundMoney(base - tdsAmount + gst)
 
   function handleClose() {
     if (submitting) return
@@ -96,7 +96,8 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
       await persistInvoiceUpdate(inv.id, {
         status: 'audit_cleared',
         tds_amount: tdsAmount,
-        tds_deducted: applyTds,
+        tds_deducted: tdsRate > 0,
+        tds_percentage: tdsRate,
         final_payable_amount: finalPayable,
         rejection_note: null,
       })
@@ -222,9 +223,9 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
                 <span className="font-medium text-text-2">+{fmtAmount(gst)}</span>
               </div>
             )}
-            {applyTds && (
+            {tdsRate > 0 && (
               <div className="mt-2 flex justify-between gap-4 text-text-2">
-                <span>TDS (1% of base)</span>
+                <span>TDS ({tdsRate}% of base)</span>
                 <span className="font-medium text-red">−{fmtAmount(tdsAmount)}</span>
               </div>
             )}
@@ -236,26 +237,32 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
             </div>
           </div>
 
-          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-r border border-border bg-bg-3/50 px-4 py-3">
-            <span className="text-sm text-text">Apply 1% TDS</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={applyTds}
-              onClick={() => setApplyTds((v) => !v)}
-              className={cn(
-                'relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border transition-colors',
-                applyTds ? 'bg-accent/25' : 'bg-bg'
-              )}
-            >
-              <span
-                className={cn(
-                  'pointer-events-none absolute top-0.5 h-5 w-5 rounded-full bg-text shadow-sm transition-transform',
-                  applyTds ? 'translate-x-5' : 'translate-x-0.5'
-                )}
-              />
-            </button>
-          </label>
+          <div className="rounded-r border border-border bg-bg-3/50 px-4 py-3">
+            <p className="mb-2 text-sm text-text">TDS deduction</p>
+            <div className="inline-flex w-full rounded-r border border-border bg-bg overflow-hidden">
+              {([0, 1, 2, 10] as const).map((rate) => {
+                const active = tdsRate === rate
+                const label = rate === 0 ? 'None' : `${rate}%`
+                return (
+                  <button
+                    key={rate}
+                    type="button"
+                    onClick={() => setTdsRate(rate)}
+                    className={cn(
+                      'flex-1 px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors',
+                      'border-r border-border last:border-r-0',
+                      active ? 'bg-white/10 text-text' : 'text-text-3 hover:text-text-2 hover:bg-bg-2/50'
+                    )}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-text-3">
+              Deducted on base amount only. Final payable = Base − TDS + GST.
+            </p>
+          </div>
         </div>
       )}
     </Modal>
