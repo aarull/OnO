@@ -49,7 +49,7 @@ export default {
         'r-3': '20px',
       },
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['DM Serif Display', 'serif'],
       },
       animation: {
