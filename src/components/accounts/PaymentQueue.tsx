@@ -442,13 +442,26 @@ function PayerQueue({
   const sortedInvoices = useMemo(() => {
     const list = [...queue]
     list.sort((a, b) => {
-      const extraA = a as unknown as { cleared_at?: string | null }
-      const extraB = b as unknown as { cleared_at?: string | null }
-      const rawA = sortByField === 'cleared_at' ? extraA.cleared_at : a.created_at
-      const rawB = sortByField === 'cleared_at' ? extraB.cleared_at : b.created_at
-      const dateA = new Date(rawA || a.created_at).getTime()
-      const dateB = new Date(rawB || b.created_at).getTime()
-      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+      let timeA = 0
+      let timeB = 0
+
+      if (sortByField === 'created_at') {
+        timeA = new Date(a.created_at).getTime()
+        timeB = new Date(b.created_at).getTime()
+      } else {
+        // Sorting by Approval Date (cleared_at)
+        // Fallback to created_at if cleared_at is somehow missing
+        const extraA = a as unknown as { cleared_at?: string | null }
+        const extraB = b as unknown as { cleared_at?: string | null }
+        timeA = new Date(extraA.cleared_at || a.created_at).getTime()
+        timeB = new Date(extraB.cleared_at || b.created_at).getTime()
+      }
+
+      if (sortOrder === 'desc') {
+        return timeB - timeA // Latest first (Descending)
+      } else {
+        return timeA - timeB // Oldest first (Ascending)
+      }
     })
     return list
   }, [queue, sortByField, sortOrder])
