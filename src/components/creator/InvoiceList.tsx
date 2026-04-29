@@ -107,6 +107,7 @@ export function InvoiceList() {
               'payment_history',
               'created_at',
               'updated_at',
+              'cleared_at',
             ].join(',')
           )
           .order('created_at', { ascending: false })

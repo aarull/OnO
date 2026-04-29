@@ -15,24 +15,13 @@ import { MetricCard } from '../shared/MetricCard'
 import { EmptyState } from '../shared/EmptyState'
 import { ProcessModal } from './ProcessModal'
 import { ReleasePaymentModal, type PaymentReason } from './ReleasePaymentModal'
-
-const isOverdue = (updatedAt: string) => {
-  const diff = Date.now() - new Date(updatedAt).getTime()
-  return diff > 3 * 24 * 60 * 60 * 1000
-}
-
-const isHold = (amount: number) => amount > 50000
+import { InvoiceAgingFlag } from '../shared/InvoiceAgingFlag'
+import { agingSeverity, clearanceTimestampForAging } from '../../lib/invoiceAging'
 
 function gstAmount(invoice: Invoice): number {
   const base = Number(invoice.amount)
   if (!Number.isFinite(base)) return 0
   return invoice.gst ? roundMoney(base * 0.18) : 0
-}
-
-function totalWithGst(invoice: Invoice): number {
-  const base = Number(invoice.amount)
-  if (!Number.isFinite(base)) return gstAmount(invoice)
-  return roundMoney(base + gstAmount(invoice))
 }
 
 /** Poll interval when Supabase Realtime is not configured */
@@ -95,6 +84,7 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
     try {
       await persistInvoiceUpdate(inv.id, {
         status: 'audit_cleared',
+        cleared_at: new Date().toISOString(),
         tds_amount: tdsAmount,
         tds_deducted: tdsRate > 0,
         tds_percentage: tdsRate,
@@ -312,8 +302,6 @@ function AuditorQueue({
           </thead>
           <tbody>
             {queue.map((inv) => {
-              const overdueFlag = isOverdue(inv.updated_at)
-              const holdFlag = isHold(totalWithGst(inv))
               const isPayerRejected = invoiceHasStatus(inv, 'payer_rejected_audit')
               const payerRemark = inv.rejection_note?.trim() ?? ''
 
@@ -341,23 +329,7 @@ function AuditorQueue({
                     </td>
                     <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {isPayerRejected && (
-                          <span className="inline-flex items-center rounded-full border border-amber/35 bg-amber/10 px-2 py-0.5 text-[11px] font-medium text-amber">
-                            Payer return
-                          </span>
-                        )}
-                        {overdueFlag && (
-                          <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
-                            Overdue
-                          </span>
-                        )}
-                        {holdFlag && (
-                          <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
-                            24h hold
-                          </span>
-                        )}
-                      </div>
+                      <InvoiceAgingFlag invoice={inv} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-3">
@@ -446,11 +418,10 @@ function PayerQueue({
       let timeB = 0
 
       if (sortByField === 'cleared_at') {
-        // NOTE: `Invoice` does not currently have `cleared_at` in types/data.
-        // In this app, the "approval/cleared" time is represented by `updated_at`.
-        // If it's missing, assign 0 so it drops to the bottom.
-        timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0
-        timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0
+        const ca = clearanceTimestampForAging(a)
+        const cb = clearanceTimestampForAging(b)
+        timeA = ca ? new Date(ca).getTime() : 0
+        timeB = cb ? new Date(cb).getTime() : 0
       } else {
         timeA = a.created_at ? new Date(a.created_at).getTime() : 0
         timeB = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -566,9 +537,6 @@ function PayerQueue({
             const amountPaidSafe = Number.isFinite(amountPaid) ? Math.max(0, amountPaid) : 0
             const pendingOutstanding = roundMoney(contractTotalBeforePayments - amountPaidSafe)
             const adjustedNet = adjustedNetFromInvoice(inv)
-            const overdueFlag = isOverdue(inv.updated_at)
-            const holdFlag = isHold(contractTotalBeforePayments)
-
             return (
               <Fragment key={inv.id}>
                 <tr
@@ -612,18 +580,7 @@ function PayerQueue({
                   </td>
                   <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {overdueFlag && (
-                        <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
-                          Overdue
-                        </span>
-                      )}
-                      {holdFlag && (
-                        <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
-                          24h hold
-                        </span>
-                      )}
-                    </div>
+                    <InvoiceAgingFlag invoice={inv} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-3">
@@ -830,8 +787,8 @@ export function PaymentQueue() {
     )
   }, [activeRole, auditorPending, payerPending])
 
-  const overdue = useMemo(
-    () => pendingForRole.filter((i) => isOverdue(i.updated_at)),
+  const agingHighRisk = useMemo(
+    () => pendingForRole.filter((i) => agingSeverity(i) === 'red'),
     [pendingForRole]
   )
 
@@ -1043,7 +1000,7 @@ export function PaymentQueue() {
         <MetricCard icon="⏳" value={pendingForRole.length} label="Pending Payments" />
         <MetricCard icon="💰" value={fmtAmount(totalLiability)} label="Total Liability" />
         <MetricCard icon="✅" value={released.length} label="Processed" />
-        <MetricCard icon="🔴" value={overdue.length} label="Overdue >3 days" />
+        <MetricCard icon="⏳" value={agingHighRisk.length} label="Aging (7d+ cleared)" />
       </div>
 
       {activeRole === 'auditor' ? (

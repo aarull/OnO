@@ -7,6 +7,7 @@ import { fmtAmount, timeAgo } from '../../lib/utils'
 import { StatusBadge } from '../shared/StatusBadge'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
+import { InvoiceAgingFlag } from '../shared/InvoiceAgingFlag'
 
 export function ApprovedList() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -78,6 +79,9 @@ export function ApprovedList() {
                   Status
                 </th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-3">
+                  Flag
+                </th>
+                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-3">
                   Updated
                 </th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-3">
@@ -100,6 +104,9 @@ export function ApprovedList() {
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={inv.status} />
+                  </td>
+                  <td className="px-5 py-4">
+                    <InvoiceAgingFlag invoice={inv} />
                   </td>
                   <td className="px-5 py-4 text-xs text-text-3">{timeAgo(inv.updated_at)}</td>
                   <td className="px-5 py-4">

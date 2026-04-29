@@ -77,6 +77,8 @@ export interface Invoice {
   payment_history?: PaymentHistoryEntry[] | null
   created_at: string
   updated_at: string
+  /** ISO timestamp when AP Auditor cleared for payment (audit_cleared). */
+  cleared_at?: string | null
 }
 
 export interface AuditEntry {

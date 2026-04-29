@@ -10,6 +10,7 @@ import { InvoiceTable } from '../shared/InvoiceTable'
 import { InvoicePdfActions } from '../shared/InvoicePdfActions'
 import { InvoiceDetailPanel } from '../shared/InvoiceDetailPanel'
 import { WorkloadBar } from '../shared/WorkloadBar'
+import { InvoiceAgingFlag } from '../shared/InvoiceAgingFlag'
 
 const ACTION_DOT_COLORS: Record<string, string> = {
   'IM Approved': 'bg-green',
@@ -96,6 +97,11 @@ export function AgencyView() {
     },
     { key: 'assigned_im', label: 'IM Member' },
     { key: 'status', label: 'Status', render: (row: Invoice) => <StatusBadge status={row.status} /> },
+    {
+      key: 'aging',
+      label: 'Flag',
+      render: (row: Invoice) => <InvoiceAgingFlag invoice={row} />,
+    },
     { key: 'updated_at', label: 'Updated', render: (row: Invoice) => (
       <span className="text-text-2">{timeAgo(row.updated_at)}</span>
     )},
