@@ -433,6 +433,7 @@ function PayerQueue({
   onConfirmReject: (invoiceId: string, status: 'payer_rejected_audit' | 'payer_rejected_im') => void
   rejectSubmitting: boolean
 }) {
+  const [sortByField, setSortByField] = useState<'cleared_at' | 'created_at'>('cleared_at')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const queue = useMemo(
     () => invoices.filter((i) => isAuditClearedInvoice(i)),
@@ -441,14 +442,16 @@ function PayerQueue({
   const sortedInvoices = useMemo(() => {
     const list = [...queue]
     list.sort((a, b) => {
-      const clearedA = (a as unknown as { cleared_at?: string | null }).cleared_at
-      const clearedB = (b as unknown as { cleared_at?: string | null }).cleared_at
-      const dateA = new Date(clearedA || a.created_at).getTime()
-      const dateB = new Date(clearedB || b.created_at).getTime()
+      const extraA = a as unknown as { cleared_at?: string | null }
+      const extraB = b as unknown as { cleared_at?: string | null }
+      const rawA = sortByField === 'cleared_at' ? extraA.cleared_at : a.created_at
+      const rawB = sortByField === 'cleared_at' ? extraB.cleared_at : b.created_at
+      const dateA = new Date(rawA || a.created_at).getTime()
+      const dateB = new Date(rawB || b.created_at).getTime()
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
     })
     return list
-  }, [queue, sortOrder])
+  }, [queue, sortByField, sortOrder])
 
   if (queue.length === 0) {
     return <EmptyState icon="🎉" message="No invoices cleared for payment." />
@@ -458,6 +461,17 @@ function PayerQueue({
     <div className="overflow-x-auto rounded-r-2 border border-border">
       <div className="p-4 pb-0">
         <div className="flex justify-end mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-text-3">Sort by:</span>
+            <select
+              value={sortByField}
+              onChange={(e) => setSortByField(e.target.value as 'cleared_at' | 'created_at')}
+              className="rounded-full border border-border bg-bg px-4 py-2 text-xs font-semibold text-text-2 transition-colors hover:bg-bg-2 focus:border-accent focus:outline-none"
+              aria-label="Sort invoices by field"
+            >
+              <option value="cleared_at">Approval Date</option>
+              <option value="created_at">Creation Date</option>
+            </select>
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
@@ -467,6 +481,7 @@ function PayerQueue({
             <option value="desc">Sort: Latest First</option>
             <option value="asc">Sort: Oldest First</option>
           </select>
+          </div>
         </div>
       </div>
       <table className="w-full">
