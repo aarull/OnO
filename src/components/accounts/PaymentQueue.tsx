@@ -433,10 +433,22 @@ function PayerQueue({
   onConfirmReject: (invoiceId: string, status: 'payer_rejected_audit' | 'payer_rejected_im') => void
   rejectSubmitting: boolean
 }) {
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const queue = useMemo(
     () => invoices.filter((i) => isAuditClearedInvoice(i)),
     [invoices]
   )
+  const sortedInvoices = useMemo(() => {
+    const list = [...queue]
+    list.sort((a, b) => {
+      const clearedA = (a as unknown as { cleared_at?: string | null }).cleared_at
+      const clearedB = (b as unknown as { cleared_at?: string | null }).cleared_at
+      const dateA = new Date(clearedA || a.created_at).getTime()
+      const dateB = new Date(clearedB || b.created_at).getTime()
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB
+    })
+    return list
+  }, [queue, sortOrder])
 
   if (queue.length === 0) {
     return <EmptyState icon="🎉" message="No invoices cleared for payment." />
@@ -444,6 +456,35 @@ function PayerQueue({
 
   return (
     <div className="overflow-x-auto rounded-r-2 border border-border">
+      <div className="flex items-center justify-end gap-2 px-4 py-3 bg-bg-3 border-b border-border">
+        <span className="text-xs font-semibold uppercase tracking-wider text-text-3">Sort</span>
+        <div className="inline-flex overflow-hidden rounded-full border border-border bg-bg">
+          <button
+            type="button"
+            onClick={() => setSortOrder('desc')}
+            className={cn(
+              'px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors',
+              sortOrder === 'desc'
+                ? 'bg-white/10 text-text'
+                : 'text-text-3 hover:text-text-2 hover:bg-bg-2/50'
+            )}
+          >
+            Latest First
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortOrder('asc')}
+            className={cn(
+              'px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors border-l border-border',
+              sortOrder === 'asc'
+                ? 'bg-white/10 text-text'
+                : 'text-text-3 hover:text-text-2 hover:bg-bg-2/50'
+            )}
+          >
+            Oldest First
+          </button>
+        </div>
+      </div>
       <table className="w-full">
         <thead>
           <tr className="bg-bg-3">
@@ -460,7 +501,7 @@ function PayerQueue({
           </tr>
         </thead>
         <tbody>
-          {queue.map((inv) => {
+          {sortedInvoices.map((inv) => {
             const base = Number(inv.amount)
             const baseSafe = Number.isFinite(base) ? base : 0
             const gst = gstAmount(inv)
