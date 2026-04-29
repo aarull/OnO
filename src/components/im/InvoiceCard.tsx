@@ -10,6 +10,12 @@ interface InvoiceCardProps {
   onApprove: (id: string) => void
   onReject: (id: string) => void
   onViewTimeline: (invoice: Invoice) => void
+  approvingId?: string | null
+  approveRemark?: string
+  onApproveRemarkChange?: (next: string) => void
+  onCancelApprove?: () => void
+  onConfirmApprove?: (id: string) => void
+  approveSubmitting?: boolean
   /** Payer-returned lane: send back to creator with a new remark */
   onRejectToCreator?: (id: string) => void
   /** Payer-returned lane: adjust base amount only and return to Accounts audit */
@@ -21,6 +27,12 @@ export function InvoiceCard({
   onApprove,
   onReject,
   onViewTimeline,
+  approvingId,
+  approveRemark,
+  onApproveRemarkChange,
+  onCancelApprove,
+  onConfirmApprove,
+  approveSubmitting,
   onRejectToCreator,
   onFixResubmitAccounts,
 }: InvoiceCardProps) {
@@ -207,6 +219,49 @@ export function InvoiceCard({
           <Button variant="red" size="xs" className="flex-1" onClick={() => onReject(invoice.id)}>
             Reject ✗
           </Button>
+        </div>
+      )}
+
+      {approvingId === invoice.id && (
+        <div className="absolute inset-0 z-20 bg-[#1A1A1A] p-4 flex flex-col gap-3 rounded-xl">
+          <div>
+            <p className="font-serif text-lg text-text">Approve Invoice</p>
+            <p className="mt-1 text-sm text-text-2">
+              Approving {invoice.invoice_number ?? invoice.id} for {invoice.creator_name}
+            </p>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-2">
+            <label className="block text-sm font-medium text-text">
+              Add a custom note or remark for the Accounts team{' '}
+              <span className="text-text-3">(Optional)</span>
+            </label>
+            <textarea
+              value={approveRemark ?? ''}
+              onChange={(e) => onApproveRemarkChange?.(e.target.value)}
+              placeholder="e.g. All details verified, proceed with payout."
+              className="w-full flex-grow resize-none rounded-r border border-gray-800 bg-[#141414] px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onCancelApprove?.()}
+              disabled={!!approveSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="green"
+              size="sm"
+              onClick={() => onConfirmApprove?.(invoice.id)}
+              disabled={!!approveSubmitting}
+            >
+              {approveSubmitting ? 'Approving…' : 'Confirm Approval'}
+            </Button>
+          </div>
         </div>
       )}
     </div>
