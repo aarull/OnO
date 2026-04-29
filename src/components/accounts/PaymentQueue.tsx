@@ -473,26 +473,62 @@ function PayerQueue({
     <div className="overflow-x-auto rounded-r-2 border border-border">
       <div className="p-4 pb-0">
         <div className="flex justify-end mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-text-3">Sort by:</span>
-            <select
-              value={sortByField}
-              onChange={(e) => setSortByField(e.target.value as 'cleared_at' | 'created_at')}
-              className="rounded-full border border-border bg-bg px-4 py-2 text-xs font-semibold text-text-2 transition-colors hover:bg-bg-2 focus:border-accent focus:outline-none"
-              aria-label="Sort invoices by field"
-            >
-              <option value="cleared_at">Approval Date</option>
-              <option value="created_at">Creation Date</option>
-            </select>
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-            className="rounded-full border border-border bg-bg px-4 py-2 text-xs font-semibold text-text-2 transition-colors hover:bg-bg-2 focus:border-accent focus:outline-none"
-            aria-label="Sort invoices"
-          >
-            <option value="desc">Sort: Latest First</option>
-            <option value="asc">Sort: Oldest First</option>
-          </select>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-medium text-text-2">Sort by:</span>
+
+            <div className="relative">
+              <select
+                value={sortByField}
+                onChange={(e) => setSortByField(e.target.value as 'cleared_at' | 'created_at')}
+                className="appearance-none bg-[#1A1A1A] border border-white/10 text-xs font-medium text-text px-3 py-1.5 pr-8 rounded-lg transition-colors hover:bg-[#202020] hover:border-white/15 focus:outline-none focus:border-white/20 focus:ring-2 focus:ring-white/10"
+                aria-label="Sort invoices by field"
+              >
+                <option value="cleared_at">Approval Date</option>
+                <option value="created_at">Creation Date</option>
+              </select>
+              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-3">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="relative">
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="appearance-none bg-[#1A1A1A] border border-white/10 text-xs font-medium text-text px-3 py-1.5 pr-8 rounded-lg transition-colors hover:bg-[#202020] hover:border-white/15 focus:outline-none focus:border-white/20 focus:ring-2 focus:ring-white/10"
+                aria-label="Sort invoices"
+              >
+                <option value="desc">Sort: Latest First</option>
+                <option value="asc">Sort: Oldest First</option>
+              </select>
+              <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-3">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M6 9l6 6 6-6" />
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
       </div>
