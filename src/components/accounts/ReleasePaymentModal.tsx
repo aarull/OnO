@@ -26,11 +26,13 @@ interface ReleasePaymentModalProps {
     amountToRelease: number
     paymentReason: PaymentReason
     noteToCreator: string
+    utrNumber: string
   }) => Promise<void>
 }
 
 export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: ReleasePaymentModalProps) {
   const [amountStr, setAmountStr] = useState('')
+  const [utrNumber, setUtrNumber] = useState('')
   const [paymentReason, setPaymentReason] = useState<PaymentReason>('Advance Released')
   const [noteToCreator, setNoteToCreator] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -48,6 +50,7 @@ export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: Releas
     setSubmitting(false)
     setPaymentReason('Advance Released')
     setAmountStr(String(pendingBalance))
+    setUtrNumber('')
     setNoteToCreator('')
   }, [open, invoice, pendingBalance])
 
@@ -70,6 +73,7 @@ export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: Releas
       toast.error('Enter a valid amount greater than zero')
       return
     }
+    const utrTrimmed = utrNumber.trim()
     setSubmitting(true)
     try {
       await onSubmit({
@@ -77,6 +81,7 @@ export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: Releas
         amountToRelease: n,
         paymentReason,
         noteToCreator: noteToCreator.trim(),
+        utrNumber: utrTrimmed,
       })
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to release payment')
@@ -122,11 +127,24 @@ export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: Releas
         </div>
 
         <div>
+          <label className="mb-1.5 block text-sm font-medium text-text-2">UTR Number</label>
+          <input
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="Bank reference / UTR (optional)"
+            value={utrNumber}
+            onChange={(e) => setUtrNumber(e.target.value)}
+            className="w-full rounded-md border border-white/10 bg-[#1A1A1A] px-3 py-2 text-sm text-text placeholder:text-text-3 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10"
+          />
+        </div>
+
+        <div>
           <label className="mb-1.5 block text-sm font-medium text-text-2">Payment reason</label>
           <select
             value={paymentReason}
             onChange={(e) => setPaymentReason(e.target.value as PaymentReason)}
-            className="w-full rounded-r border border-border bg-bg-3 px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
+            className="w-full appearance-none rounded-md border border-white/10 bg-[#1A1A1A] px-3 py-2 text-sm font-medium text-text transition-colors hover:border-white/15 hover:bg-[#202020] focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10"
           >
             {PAYMENT_REASONS.map((r) => (
               <option key={r} value={r}>
@@ -143,7 +161,7 @@ export function ReleasePaymentModal({ open, invoice, onClose, onSubmit }: Releas
             onChange={(e) => setNoteToCreator(e.target.value)}
             placeholder="Write a short note for the creator…"
             rows={4}
-            className="w-full resize-none rounded-r border border-border bg-bg-3 px-3 py-2 text-sm text-text placeholder:text-text-3 focus:border-accent focus:outline-none"
+            className="w-full resize-none rounded-md border border-white/10 bg-[#1A1A1A] px-3 py-2 text-sm text-text placeholder:text-text-3 focus:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/10"
           />
         </div>
       </div>

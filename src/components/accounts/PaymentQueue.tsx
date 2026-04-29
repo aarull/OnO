@@ -819,13 +819,17 @@ export function PaymentQueue() {
     amountToRelease: number
     paymentReason: PaymentReason
     noteToCreator: string
+    utrNumber: string
   }) {
     const inv = args.invoice
+    const amt = Number(args.amountToRelease)
     try {
       await api.post(`/invoices/${encodeURIComponent(inv.id)}/release`, {
-        amount_released: Number(args.amountToRelease),
+        amount_released: amt,
+        paymentAmount: amt,
         reason: args.paymentReason,
         note: args.noteToCreator || undefined,
+        ...(args.utrNumber.trim() ? { utrNumber: args.utrNumber.trim() } : {}),
       })
       toast.success('Payment released successfully')
       setReleaseOpen(false)
