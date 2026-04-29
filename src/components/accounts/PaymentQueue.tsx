@@ -407,10 +407,24 @@ function PayerQueue({
   invoices,
   onViewTimeline,
   onProcess,
+  rejectingId,
+  rejectReason,
+  setRejectReason,
+  onStartReject,
+  onCancelReject,
+  onConfirmReject,
+  rejectSubmitting,
 }: {
   invoices: Invoice[]
   onViewTimeline: (invoice: Invoice) => void
   onProcess: (invoice: Invoice) => void
+  rejectingId: string | null
+  rejectReason: string
+  setRejectReason: (next: string) => void
+  onStartReject: (invoiceId: string) => void
+  onCancelReject: () => void
+  onConfirmReject: (invoiceId: string, status: 'payer_rejected_audit' | 'payer_rejected_im') => void
+  rejectSubmitting: boolean
 }) {
   const queue = useMemo(
     () => invoices.filter((i) => isAuditClearedInvoice(i)),
@@ -461,85 +475,146 @@ function PayerQueue({
             const holdFlag = isHold(contractTotalBeforePayments)
 
             return (
-              <tr
-                key={inv.id}
-                className="cursor-pointer border-b border-border transition-colors hover:bg-bg-3/50"
-                onClick={() => onViewTimeline(inv)}
-              >
-                <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
-                <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
-                <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
-                <td className="px-4 py-3 text-sm text-text">
-                  {amountPaidSafe > 0 ? (
-                    <div className="flex max-w-[16rem] gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
+              <Fragment key={inv.id}>
+                <tr
+                  className="cursor-pointer border-b border-border transition-colors hover:bg-bg-3/50"
+                  onClick={() => onViewTimeline(inv)}
+                >
+                  <td className="px-4 py-3 text-sm font-medium text-accent-2">{inv.id}</td>
+                  <td className="px-4 py-3 text-sm text-text">{inv.creator_name}</td>
+                  <td className="px-4 py-3 text-sm text-text">{inv.campaign}</td>
+                  <td className="px-4 py-3 text-sm text-text">
+                    {amountPaidSafe > 0 ? (
+                      <div className="flex max-w-[16rem] gap-1.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-lg font-semibold tracking-tight text-accent-2">
+                              {fmtAmount(adjustedNet)}
+                            </span>
+                            <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
+                              Partially Paid
+                            </span>
+                          </div>
+                          <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
+                            Pending • {fmtAmount(pendingOutstanding)} • {fmtAmount(amountPaidSafe)}{' '}
+                            already paid
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex max-w-[16rem] gap-1.5">
+                        <div className="min-w-0 flex-1">
                           <span className="text-lg font-semibold tracking-tight text-accent-2">
                             {fmtAmount(adjustedNet)}
                           </span>
-                          <span className="inline-flex items-center rounded-full border border-amber/40 bg-amber-bg/30 px-2 py-0.5 text-[11px] font-medium text-amber">
-                            Partially Paid
-                          </span>
                         </div>
-                        <span className="mt-0.5 block text-[11px] leading-relaxed text-text-3">
-                          Pending • {fmtAmount(pendingOutstanding)} • {fmtAmount(amountPaidSafe)}{' '}
-                          already paid
-                        </span>
                       </div>
-                    </div>
-                  ) : hasFinal ? (
-                    <div className="flex max-w-[16rem] gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-lg font-semibold tracking-tight text-accent-2">
-                          {fmtAmount(adjustedNet)}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex max-w-[16rem] gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <span className="text-lg font-semibold tracking-tight text-accent-2">
-                          {fmtAmount(adjustedNet)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-sm text-text-2 font-mono">
-                  <div className="max-w-[14rem] break-all">{inv.account_no}</div>
-                  <div className="mt-0.5 text-xs text-text-3">{inv.ifsc}</div>
-                </td>
-                <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    {overdueFlag && (
-                      <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
-                        Overdue
-                      </span>
                     )}
-                    {holdFlag && (
-                      <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
-                        24h hold
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onProcess(inv)
-                      }}
-                      className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
-                    >
-                      Release Payment
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-text-2 font-mono">
+                    <div className="max-w-[14rem] break-all">{inv.account_no}</div>
+                    <div className="mt-0.5 text-xs text-text-3">{inv.ifsc}</div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-text-2">{timeAgo(inv.updated_at)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {overdueFlag && (
+                        <span className="inline-flex items-center rounded-full bg-red-bg px-2 py-0.5 text-[11px] font-medium text-red">
+                          Overdue
+                        </span>
+                      )}
+                      {holdFlag && (
+                        <span className="inline-flex items-center rounded-full bg-amber-bg px-2 py-0.5 text-[11px] font-medium text-amber">
+                          24h hold
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <InvoicePdfActions invoice={inv} onViewTimeline={onViewTimeline} />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onStartReject(inv.id)
+                        }}
+                        className="rounded-r border border-red/40 bg-red/10 px-3 py-1.5 text-xs font-medium text-red transition-colors hover:bg-red/20 disabled:opacity-50"
+                        disabled={rejectSubmitting}
+                      >
+                        Reject
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onProcess(inv)
+                        }}
+                        className="rounded-r bg-accent/15 px-3 py-1.5 text-xs font-medium text-accent-2 transition-colors hover:bg-accent/25"
+                        disabled={rejectSubmitting}
+                      >
+                        Release Payment
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                {rejectingId === inv.id && (
+                  <tr className="border-b border-border">
+                    <td colSpan={8} className="p-0">
+                      <div className="relative h-64">
+                        <div className="absolute inset-0 z-20 bg-[#1A1A1A] p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="font-serif text-lg text-text">Reject payment</p>
+                            <p className="mt-1 text-sm text-text-2">
+                              Returning {inv.id} — {inv.creator_name}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-1 flex-col gap-2">
+                            <label className="block text-sm font-medium text-text">
+                              Rejection remark <span className="text-red">*</span>
+                            </label>
+                            <textarea
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              placeholder="Explain why payment is being rejected (visible to the receiving team)…"
+                              className="w-full flex-grow resize-none rounded-r border border-gray-800 bg-[#141414] px-4 py-3 text-sm text-text placeholder:text-text-3 focus:border-amber/50 focus:outline-none"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              type="button"
+                              onClick={onCancelReject}
+                              disabled={rejectSubmitting}
+                              className="rounded-r border border-border px-4 py-2 text-sm text-text-2 transition-colors hover:bg-bg-3 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onConfirmReject(inv.id, 'payer_rejected_audit')}
+                              disabled={rejectSubmitting}
+                              className="rounded-r border border-amber/45 bg-amber/10 px-4 py-2 text-sm font-medium text-amber transition-colors hover:bg-amber/20 disabled:opacity-50"
+                            >
+                              {rejectSubmitting ? 'Saving…' : 'Reject to AP Auditor'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onConfirmReject(inv.id, 'payer_rejected_im')}
+                              disabled={rejectSubmitting}
+                              className="rounded-r border border-red/40 bg-red/10 px-4 py-2 text-sm font-medium text-red transition-colors hover:bg-red/20 disabled:opacity-50"
+                            >
+                              {rejectSubmitting ? 'Saving…' : 'Reject to IM team'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             )
           })}
         </tbody>
@@ -557,6 +632,9 @@ export function PaymentQueue() {
   const [releaseOpen, setReleaseOpen] = useState(false)
   const [releaseInvoice, setReleaseInvoice] = useState<Invoice | null>(null)
   const [timelineInvoice, setTimelineInvoice] = useState<Invoice | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
+  const [rejectSubmitting, setRejectSubmitting] = useState(false)
 
   const fetchInvoices = useCallback(async (silent = false) => {
     try {
@@ -752,6 +830,63 @@ export function PaymentQueue() {
     }
   }
 
+  function startInlinePayerReject(invoiceId: string) {
+    setRejectingId(invoiceId)
+    setRejectReason('')
+    setRejectSubmitting(false)
+  }
+
+  function cancelInlinePayerReject() {
+    if (rejectSubmitting) return
+    setRejectingId(null)
+    setRejectReason('')
+  }
+
+  async function confirmInlinePayerReject(
+    invoiceId: string,
+    status: 'payer_rejected_audit' | 'payer_rejected_im'
+  ) {
+    const trimmed = rejectReason.trim()
+    if (!trimmed) {
+      toast.error('Rejection remark is required')
+      return
+    }
+
+    setRejectSubmitting(true)
+    setInvoices((prev) =>
+      prev.map((i) =>
+        i.id === invoiceId
+          ? {
+              ...i,
+              status,
+              rejection_note: trimmed,
+              updated_at: new Date().toISOString(),
+            }
+          : i
+      )
+    )
+
+    try {
+      await persistInvoiceUpdate(invoiceId, {
+        status,
+        rejection_note: trimmed,
+      })
+      toast.success(
+        status === 'payer_rejected_audit'
+          ? 'Returned to AP Auditor for review'
+          : 'Returned to IM team'
+      )
+      setRejectingId(null)
+      setRejectReason('')
+      void fetchInvoices(true)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reject payment')
+      void fetchInvoices(true)
+    } finally {
+      setRejectSubmitting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -827,6 +962,13 @@ export function PaymentQueue() {
           invoices={invoices}
           onViewTimeline={setTimelineInvoice}
           onProcess={handleRelease}
+          rejectingId={rejectingId}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+          onStartReject={startInlinePayerReject}
+          onCancelReject={cancelInlinePayerReject}
+          onConfirmReject={(invoiceId, status) => void confirmInlinePayerReject(invoiceId, status)}
+          rejectSubmitting={rejectSubmitting}
         />
       )}
 
