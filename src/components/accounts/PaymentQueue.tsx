@@ -456,33 +456,17 @@ function PayerQueue({
 
   return (
     <div className="overflow-x-auto rounded-r-2 border border-border">
-      <div className="flex items-center justify-end gap-2 px-4 py-3 bg-bg-3 border-b border-border">
-        <span className="text-xs font-semibold uppercase tracking-wider text-text-3">Sort</span>
-        <div className="inline-flex overflow-hidden rounded-full border border-border bg-bg">
-          <button
-            type="button"
-            onClick={() => setSortOrder('desc')}
-            className={cn(
-              'px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors',
-              sortOrder === 'desc'
-                ? 'bg-white/10 text-text'
-                : 'text-text-3 hover:text-text-2 hover:bg-bg-2/50'
-            )}
+      <div className="p-4 pb-0">
+        <div className="flex justify-end mb-4">
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            className="rounded-full border border-border bg-bg px-4 py-2 text-xs font-semibold text-text-2 transition-colors hover:bg-bg-2 focus:border-accent focus:outline-none"
+            aria-label="Sort invoices"
           >
-            Latest First
-          </button>
-          <button
-            type="button"
-            onClick={() => setSortOrder('asc')}
-            className={cn(
-              'px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors border-l border-border',
-              sortOrder === 'asc'
-                ? 'bg-white/10 text-text'
-                : 'text-text-3 hover:text-text-2 hover:bg-bg-2/50'
-            )}
-          >
-            Oldest First
-          </button>
+            <option value="desc">Sort: Latest First</option>
+            <option value="asc">Sort: Oldest First</option>
+          </select>
         </div>
       </div>
       <table className="w-full">
