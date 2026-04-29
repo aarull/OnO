@@ -1,9 +1,10 @@
 import { AVATAR_COLORS } from './constants'
+import { formatIstDateTime, getIstParts } from './dateUtils'
 
 let invoiceCounter = 1
 
 export function genId(): string {
-  const year = new Date().getFullYear()
+  const year = getIstParts().year
   const num = String(invoiceCounter++).padStart(4, '0')
   return `INV-${year}-${num}`
 }
@@ -36,14 +37,7 @@ export function fmtAmount(n: number): string {
 }
 
 export function fmtDate(iso: string): string {
-  const d = new Date(iso)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const day = String(d.getDate()).padStart(2, '0')
-  const mon = months[d.getMonth()]
-  const year = d.getFullYear()
-  const hours = String(d.getHours()).padStart(2, '0')
-  const mins = String(d.getMinutes()).padStart(2, '0')
-  return `${day} ${mon} ${year} · ${hours}:${mins}`
+  return formatIstDateTime(iso)
 }
 
 export function timeAgo(iso: string): string {

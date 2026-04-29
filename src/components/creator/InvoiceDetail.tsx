@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import type { Invoice, AuditEntry, PaymentHistoryEntry } from '../../lib/types'
 import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import { fmtAmount, fmtDate } from '../../lib/utils'
+import { formatIstDateTime } from '../../lib/dateUtils'
 import { FinancialBreakdown } from '../shared/FinancialBreakdown'
 import { StatusBadge } from '../shared/StatusBadge'
 import { StatusTracker } from '../shared/StatusTracker'
@@ -261,16 +262,7 @@ export function InvoiceDetail({
           <ul className="space-y-3">
             {paymentHistorySorted.map((h, idx) => {
               const note = (h.note ?? '').trim()
-              const d = new Date(h.created_at)
-              const createdAtDisplay = Number.isFinite(d.getTime())
-                ? d.toLocaleString('en-IN', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
-                : '—'
+              const createdAtDisplay = formatIstDateTime(h.created_at)
               return (
                 <li key={`${h.created_at}-${idx}`} className="flex items-start gap-3">
                   <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-accent/50" />

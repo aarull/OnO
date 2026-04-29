@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import type { Invoice } from '../../lib/types'
 import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import { fmtAmount } from '../../lib/utils'
+import { getIstParts } from '../../lib/dateUtils'
 import { MetricCard } from '../shared/MetricCard'
 import { InvoiceCard } from './InvoiceCard'
 import { RejectModal } from './RejectModal'
@@ -239,12 +240,14 @@ export function InvoiceQueue() {
       try {
         const data: Invoice[] = await api.get('/invoices')
         allInvoicesRef.current = data
-        const now = new Date()
+        const now = getIstParts()
         const count = data.filter(
           (inv) =>
             (inv.status === 'im_approved' || inv.status === 'released') &&
-            new Date(inv.updated_at).getMonth() === now.getMonth() &&
-            new Date(inv.updated_at).getFullYear() === now.getFullYear()
+            (() => {
+              const p = getIstParts(inv.updated_at)
+              return p.month === now.month && p.year === now.year
+            })()
         ).length
         setApprovedThisMonth(count)
       } catch {
