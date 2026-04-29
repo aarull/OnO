@@ -445,16 +445,15 @@ function PayerQueue({
       let timeA = 0
       let timeB = 0
 
-      if (sortByField === 'created_at') {
-        timeA = new Date(a.created_at).getTime()
-        timeB = new Date(b.created_at).getTime()
+      if (sortByField === 'cleared_at') {
+        // NOTE: `Invoice` does not currently have `cleared_at` in types/data.
+        // In this app, the "approval/cleared" time is represented by `updated_at`.
+        // If it's missing, assign 0 so it drops to the bottom.
+        timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0
+        timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0
       } else {
-        // Sorting by Approval Date (cleared_at)
-        // Fallback to created_at if cleared_at is somehow missing
-        const extraA = a as unknown as { cleared_at?: string | null }
-        const extraB = b as unknown as { cleared_at?: string | null }
-        timeA = new Date(extraA.cleared_at || a.created_at).getTime()
-        timeB = new Date(extraB.cleared_at || b.created_at).getTime()
+        timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+        timeB = b.created_at ? new Date(b.created_at).getTime() : 0
       }
 
       if (sortOrder === 'desc') {
