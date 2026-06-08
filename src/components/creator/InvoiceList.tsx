@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { handleInvoiceDownload, handleInvoiceView } from '../../lib/invoiceDocumentActions'
 import { handleWhatsAppReminder } from '../../lib/imWhatsAppReminder'
 import { normalizeInvoiceStatus } from '../../lib/invoiceStatus'
+import { creatorInvoiceSelect } from '../../lib/invoiceSelect'
 import { supabase } from '../../lib/supabase'
 import { adjustedNetFromInvoice } from '../../lib/invoicePayout'
 import type { Invoice } from '../../lib/types'
@@ -79,37 +80,7 @@ export function InvoiceList() {
       if (supabase) {
         const { data, error } = await supabase
           .from('invoices')
-          .select(
-            [
-              'id',
-              'creator_id',
-              'creator_name',
-              'campaign',
-              'amount',
-              'gst',
-              'account_holder_name',
-              'pan',
-              'pan_number',
-              'gst_number',
-              'account_no',
-              'ifsc',
-              'assigned_im',
-              'assigned_im_phone',
-              'invoice_number',
-              'invoice_file_url',
-              'status',
-              'im_remark',
-              'rejection_note',
-              'tds_amount',
-              'tds_deducted',
-              'final_payable_amount',
-              'amount_paid',
-              'payment_history',
-              'created_at',
-              'updated_at',
-              'cleared_at',
-            ].join(',')
-          )
+          .select(creatorInvoiceSelect())
           .order('created_at', { ascending: false })
 
         if (error) throw new Error(error.message)
