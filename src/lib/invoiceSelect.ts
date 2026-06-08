@@ -28,7 +28,6 @@ export const CREATOR_INVOICE_SELECT_COLUMNS = [
   'payment_history',
   'created_at',
   'updated_at',
-  'cleared_at',
 ] as const
 
 export function creatorInvoiceSelect(): string {
