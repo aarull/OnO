@@ -89,7 +89,10 @@ export function InvoiceDetail({
   const gstNumberResolved =
     invoice.gst_number?.trim() || invoice.creator?.gst_number?.trim() || ''
   const panNumberResolved =
-    invoice.pan_number?.trim() || invoice.creator?.pan_number?.trim() || ''
+    invoice.pan_number?.trim() ||
+    invoice.pan?.trim() ||
+    invoice.creator?.pan_number?.trim() ||
+    ''
   const hasGstNumber = gstNumberResolved.length > 0
   const hasPanNumber = panNumberResolved.length > 0
   const showTaxIdFallback = !hasGstNumber && !hasPanNumber

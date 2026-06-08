@@ -47,9 +47,10 @@ export interface Invoice {
   amount: number
   gst: boolean
   account_holder_name?: string
-  pan?: string
-  /** When present from API, shown in invoice detail identity card (preferred over legacy `pan`) */
+  /** Supabase / primary PAN column */
   pan_number?: string | null
+  /** Legacy API alias when `pan_number` is absent */
+  pan?: string
   gst_number?: string
   account_no: string
   ifsc: string

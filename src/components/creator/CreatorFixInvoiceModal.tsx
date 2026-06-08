@@ -20,7 +20,7 @@ export interface CreatorFixInvoicePayload {
   campaign: string
   amount: number
   gst: boolean
-  pan: string
+  pan_number: string
   gst_number: string
   account_holder_name: string
   account_no: string
@@ -108,7 +108,7 @@ export function CreatorFixInvoiceModal({
         campaign: campaign.trim(),
         amount: Number(amount),
         gst: gst === 'yes',
-        pan: pan.trim().toUpperCase(),
+        pan_number: pan.trim().toUpperCase(),
         gst_number: gstNumber.trim().toUpperCase(),
         account_holder_name: accountHolderName.trim(),
         account_no: accountNo.trim(),

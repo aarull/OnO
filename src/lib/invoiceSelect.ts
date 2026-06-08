@@ -10,7 +10,7 @@ export const CREATOR_INVOICE_SELECT_COLUMNS = [
   'amount',
   'gst',
   'account_holder_name',
-  'pan',
+  'pan_number',
   'gst_number',
   'account_no',
   'ifsc',
