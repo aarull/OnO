@@ -16,7 +16,6 @@ export const CREATOR_INVOICE_SELECT_COLUMNS = [
   'ifsc',
   'assigned_im',
   'assigned_im_phone',
-  'invoice_number',
   'invoice_file_url',
   'status',
   'im_remark',
