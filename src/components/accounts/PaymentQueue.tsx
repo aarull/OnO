@@ -16,7 +16,7 @@ import { EmptyState } from '../shared/EmptyState'
 import { ProcessModal } from './ProcessModal'
 import { ReleasePaymentModal, type PaymentReason } from './ReleasePaymentModal'
 import { InvoiceAgingFlag } from '../shared/InvoiceAgingFlag'
-import { agingSeverity, clearanceTimestampForAging } from '../../lib/invoiceAging'
+import { agingSeverity } from '../../lib/invoiceAging'
 
 function gstAmount(invoice: Invoice): number {
   const base = Number(invoice.amount)
@@ -84,7 +84,6 @@ function AuditModal({ invoice, open, onClose, onSuccess }: AuditModalProps) {
     try {
       await persistInvoiceUpdate(inv.id, {
         status: 'audit_cleared',
-        cleared_at: new Date().toISOString(),
         tds_amount: tdsAmount,
         tds_deducted: tdsRate > 0,
         tds_percentage: tdsRate,
@@ -405,7 +404,7 @@ function PayerQueue({
   onConfirmReject: (invoiceId: string, status: 'payer_rejected_audit' | 'payer_rejected_im') => void
   rejectSubmitting: boolean
 }) {
-  const [sortByField, setSortByField] = useState<'cleared_at' | 'created_at'>('cleared_at')
+  const [sortByField, setSortByField] = useState<'updated_at' | 'created_at'>('updated_at')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const queue = useMemo(
     () => invoices.filter((i) => isAuditClearedInvoice(i)),
@@ -417,11 +416,9 @@ function PayerQueue({
       let timeA = 0
       let timeB = 0
 
-      if (sortByField === 'cleared_at') {
-        const ca = clearanceTimestampForAging(a)
-        const cb = clearanceTimestampForAging(b)
-        timeA = ca ? new Date(ca).getTime() : 0
-        timeB = cb ? new Date(cb).getTime() : 0
+      if (sortByField === 'updated_at') {
+        timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0
+        timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0
       } else {
         timeA = a.created_at ? new Date(a.created_at).getTime() : 0
         timeB = b.created_at ? new Date(b.created_at).getTime() : 0
@@ -450,11 +447,11 @@ function PayerQueue({
             <div className="relative">
               <select
                 value={sortByField}
-                onChange={(e) => setSortByField(e.target.value as 'cleared_at' | 'created_at')}
+                onChange={(e) => setSortByField(e.target.value as 'updated_at' | 'created_at')}
                 className="appearance-none bg-[#1A1A1A] border border-white/10 text-xs font-medium text-text px-3 py-1.5 pr-8 rounded-lg transition-colors hover:bg-[#202020] hover:border-white/15 focus:outline-none focus:border-white/20 focus:ring-2 focus:ring-white/10"
                 aria-label="Sort invoices by field"
               >
-                <option value="cleared_at">Approval Date</option>
+                <option value="updated_at">Approval Date</option>
                 <option value="created_at">Creation Date</option>
               </select>
               <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-text-3">
