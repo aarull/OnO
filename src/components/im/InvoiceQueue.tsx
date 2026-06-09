@@ -38,7 +38,7 @@ async function persistInvoiceFullUpdate(
   }
 
   // Use the known working route in this app.
-  // Backend may accept extra fields like `base_amount` on this route.
+  // Backend may accept extra fields on this route beyond status.
   try {
     await api.patch('/invoices/' + encodeURIComponent(invoiceId) + '/status', fields)
   } catch {
@@ -206,8 +206,6 @@ export function InvoiceQueue() {
       // STRICT: backend expects UUID/PK in `invoice.id` (never invoice_number).
       await persistInvoiceFullUpdate(uuid, {
         status: 'im_approved',
-        // Backend column is `base_amount` (API may also accept `amount`)
-        base_amount: Number(amount),
         amount: Number(amount),
         rejection_note: null,
         final_payable_amount: null,
